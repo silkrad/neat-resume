@@ -1,0 +1,37 @@
+{
+  "candidate_info": {
+    "name": "Maria Garcia",
+    "title": "Data Scientist",
+    "email": "maria.garcia@example.com",
+    "phone": "+1 415-555-0142"
+  },
+  "professional_summary": "Data scientist with expertise in machine learning and statistical analysis. Passionate about turning data into actionable insights.",
+  "skills": {
+    "Programming": ["Python", "R", "SQL"],
+    "Machine Learning": ["Scikit-learn", "TensorFlow", "Pandas"],
+    "Visualization": ["Matplotlib", "Seaborn", "Tableau"]
+  },
+  "work_experience": [
+    {
+      "position": "Data Scientist",
+      "company": "DataTech Corp",
+      "start_date": "2022-01-01",
+      "end_date": null,
+      "summary": [
+        "Developed predictive models improving customer retention by 25%",
+        "Built automated data pipelines processing 1M+ records daily"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "Master of Science",
+      "field_of_study": "Data Science",
+      "institution": "Stanford University",
+      "location": "Stanford, CA",
+      "start_date": "2020-09-01",
+      "end_date": "2022-06-15",
+      "summary": ["Thesis on Deep Learning for Natural Language Processing"]
+    }
+  ]
+}

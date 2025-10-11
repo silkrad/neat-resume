@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025-present Ricardo Rivera <silkrad@ririlabs.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -24,6 +28,12 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
+  "phonenumbers",
+  "pycountry",
+  "pydantic",
+  "pydantic[email]",
+  "pydantic-extra-types",
+  "pydantic-yaml",
   "reportlab",
 ]
 
@@ -65,3 +75,6 @@ exclude_lines = [
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
 ]
+
+[tool.ruff]
+line-length = 120

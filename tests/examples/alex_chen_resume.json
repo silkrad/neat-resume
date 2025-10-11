@@ -1,0 +1,82 @@
+{
+  "candidate_info": {
+    "name": "Alex Chen",
+    "title": "Full Stack Developer",
+    "email": "alex.chen@example.com",
+    "phone": "+1 415-555-0187",
+    "address": "Seattle, WA",
+    "website": "https://alexchen.dev",
+    "github": "https://github.com/alexchen",
+    "linkedin": "https://linkedin.com/in/alexchen"
+  },
+  "professional_summary": "Creative full-stack developer with 4+ years experience building modern web applications. Passionate about user experience, performance optimization, and clean architecture. Experienced in both frontend and backend development with a focus on scalable solutions.",
+  "skills": {
+    "Frontend": ["React", "Vue.js", "TypeScript", "HTML5", "CSS3", "Tailwind"],
+    "Backend": ["Node.js", "Python", "Express", "Django", "GraphQL"],
+    "Database": ["PostgreSQL", "MongoDB", "Redis"],
+    "DevOps": ["Docker", "AWS", "GitHub Actions", "Vercel"]
+  },
+  "work_experience": [
+    {
+      "position": "Full Stack Developer",
+      "company": "InnovateTech",
+      "start_date": "2022-01-15",
+      "end_date": null,
+      "summary": [
+        "Built responsive web applications using React and Node.js",
+        "Implemented real-time features with WebSocket connections",
+        "Optimized database queries reducing load time by 35%",
+        "Collaborated with design team to improve user experience"
+      ]
+    },
+    {
+      "position": "Frontend Developer",
+      "company": "WebCraft Studio",
+      "start_date": "2020-06-01",
+      "end_date": "2021-12-31",
+      "summary": [
+        "Developed interactive user interfaces with React and Vue.js",
+        "Integrated REST APIs and managed application state",
+        "Ensured cross-browser compatibility and mobile responsiveness"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "Bachelor of Science",
+      "field_of_study": "Information Technology",
+      "institution": "University of Washington",
+      "location": "Seattle, WA",
+      "start_date": "2016-09-01",
+      "end_date": "2020-05-15",
+      "gpa": 3.5,
+      "summary": [
+        "Focus on Web Development and Database Systems",
+        "President of Web Development Club"
+      ]
+    }
+  ],
+  "certifications": [
+    {
+      "title": "React Developer Certification",
+      "issuer": "Meta",
+      "issue_date": "2023-02-20",
+      "expiry_date": null
+    }
+  ],
+  "custom_sections": {
+    "Projects": [
+      {
+        "title": "E-commerce Platform",
+        "subtitle": "Personal Project",
+        "start_date": "2023-01-01",
+        "end_date": "2023-06-01",
+        "summary": [
+          "Built full-stack e-commerce site with React and Node.js",
+          "Implemented Stripe payment integration and user authentication",
+          "Deployed on AWS with CI/CD pipeline"
+        ]
+      }
+    ]
+  }
+}

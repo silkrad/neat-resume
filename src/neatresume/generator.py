@@ -1,0 +1,432 @@
+# SPDX-FileCopyrightText: 2025-present Ricardo Rivera <silkrad@ririlabs.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+"""PDF resume generator using ReportLab.
+
+This module provides functionality to generate professional PDF resumes
+from ResumeData models using ReportLab with a two-column layout.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib.colors import black, darkgray, lightgrey, HexColor
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether
+from reportlab.platypus.frames import Frame
+from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
+from reportlab.graphics.shapes import Line, Drawing
+from reportlab.graphics import renderPDF
+
+from .resume_data import ResumeData, CandidateInfo, EducationBlock, CertificationBlock
+
+
+class TintedPageTemplate(PageTemplate):
+    """Custom PageTemplate with a tinted background for the left column."""
+    
+    def __init__(self, left_col_width: float, page_width: float, page_height: float, 
+                 left_margin: float, **kwargs: Any) -> None:
+        """Initialize with page dimensions for background drawing."""
+        super().__init__(**kwargs)
+        self.left_col_width = left_col_width
+        self.page_width = page_width
+        self.page_height = page_height
+        self.left_margin = left_margin
+        # Professional cool tint - darker blue-gray
+        self.tint_color = HexColor('#e1e8f0')  # Darker bluish gray
+    
+    def beforeDrawPage(self, canvas: Any, doc: Any) -> None:
+        """Draw the tinted background before page content."""
+        canvas.saveState()
+        
+        # Set fill color for left column background
+        canvas.setFillColor(self.tint_color)
+        
+        # Draw background rectangle for left column extending to all edges
+        # Start from left page edge (0) and go to column boundary
+        column_boundary = self.left_margin + self.left_col_width + 0.05*inch  # Small overlap into gap
+        canvas.rect(
+            0,  # Start from left page edge
+            0,  # Start from bottom page edge
+            column_boundary,  # Width extends to column boundary
+            self.page_height,  # Full page height
+            fill=1,
+            stroke=0
+        )
+        
+        canvas.restoreState()
+
+
+class ResumeGenerator:
+    """Generate professional PDF resumes from ResumeData models.
+    
+    This generator creates a two-column layout with candidate info, skills,
+    education, and certifications on the left (34%) and work experience
+    and custom sections on the right (66%).
+    """
+    
+    def __init__(self) -> None:
+        """Initialize the resume generator with default styling."""
+        self.styles = getSampleStyleSheet()
+        self._setup_custom_styles()
+        
+    def _setup_custom_styles(self) -> None:
+        """Set up custom paragraph styles for the resume."""
+        # Header styles
+        self.styles.add(ParagraphStyle(
+            name='CandidateName',
+            parent=self.styles['Heading1'],
+            fontSize=18,
+            spaceAfter=4,
+            textColor=black,
+            alignment=TA_CENTER
+        ))
+        
+        self.styles.add(ParagraphStyle(
+            name='CandidateTitle',
+            parent=self.styles['Normal'],
+            fontSize=12,
+            spaceAfter=8,
+            textColor=darkgray,
+            alignment=TA_CENTER
+        ))
+        
+        # Section headers
+        self.styles.add(ParagraphStyle(
+            name='SectionHeader',
+            parent=self.styles['Heading2'],
+            fontSize=12,
+            spaceBefore=12,
+            spaceAfter=6,
+            textColor=black,
+            fontName='Helvetica-Bold'
+        ))
+        
+        # Left column styles (smaller font for one-page fit)
+        self.styles.add(ParagraphStyle(
+            name='LeftColumnText',
+            parent=self.styles['Normal'],
+            fontSize=8,
+            spaceAfter=2,
+            alignment=TA_LEFT,
+            leftIndent=0.15*inch  # Indent content under headers
+        ))
+        
+        self.styles.add(ParagraphStyle(
+            name='LeftColumnHeader',
+            parent=self.styles['SectionHeader'],
+            fontSize=9,
+            spaceBefore=8,
+            spaceAfter=4
+        ))
+        
+        self.styles.add(ParagraphStyle(
+            name='LeftColumnSummary',
+            parent=self.styles['Normal'],
+            fontSize=8,
+            spaceAfter=2,
+            alignment=TA_JUSTIFY,
+            leftIndent=0.15*inch  # Indent content under headers
+        ))
+        
+        # Right column styles (optimized for one-page)
+        self.styles.add(ParagraphStyle(
+            name='RightColumnText',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            spaceAfter=2,
+            alignment=TA_JUSTIFY,
+            leftIndent=0.15*inch  # Indent content under headers
+        ))
+        
+        self.styles.add(ParagraphStyle(
+            name='ExperienceTitle',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            spaceBefore=4,
+            spaceAfter=1,
+            textColor=black,
+            fontName='Helvetica-Bold',
+            leftIndent=0.15*inch  # Indent content under headers
+        ))
+        
+        self.styles.add(ParagraphStyle(
+            name='ExperienceSubtitle',
+            parent=self.styles['Normal'],
+            fontSize=8,
+            spaceAfter=2,
+            textColor=darkgray,
+            fontName='Helvetica-Oblique',
+            leftIndent=0.15*inch  # Indent content under headers
+        ))
+    
+    def generate_pdf(self, resume_data: ResumeData, output_path: str | Path) -> None:
+        """Generate a PDF resume from ResumeData.
+        
+        Args:
+            resume_data: The resume data model to convert to PDF.
+            output_path: Path where the PDF should be saved.
+        """
+        output_path = Path(output_path)
+        
+        # Set up the document with custom page template
+        doc = BaseDocTemplate(
+            str(output_path),
+            pagesize=letter,
+            rightMargin=0.25*inch,
+            leftMargin=0.25*inch,
+            topMargin=0.25*inch,
+            bottomMargin=0.25*inch
+        )
+        
+        # Calculate column widths (34% / 66% split)
+        page_width = letter[0] - doc.leftMargin - doc.rightMargin
+        left_col_width = page_width * 0.34
+        right_col_width = page_width * 0.66
+        
+        # Define frames for two-column layout
+        left_frame = Frame(
+            doc.leftMargin,
+            doc.bottomMargin,
+            left_col_width - 0.1*inch,  # Small gap between columns
+            doc.height,
+            id='left_col',
+            showBoundary=0
+        )
+        
+        right_frame = Frame(
+            doc.leftMargin + left_col_width + 0.1*inch,
+            doc.bottomMargin,
+            right_col_width - 0.1*inch,
+            doc.height,
+            id='right_col',
+            showBoundary=0
+        )
+        
+        # Create page template with two frames and tinted left column
+        template = TintedPageTemplate(
+            id='TwoCol', 
+            frames=[left_frame, right_frame],
+            left_col_width=left_col_width,
+            page_width=page_width,
+            page_height=letter[1],  # Full page height
+            left_margin=doc.leftMargin
+        )
+        doc.addPageTemplates([template])
+        
+        # Build content for both columns
+        story = []
+        
+        # Add candidate header (spans both columns by being in left frame)
+        story.extend(self._build_candidate_header(resume_data.candidate_info))
+        story.append(Spacer(1, 0.1*inch))
+        
+        # Left column content
+        story.extend(self._build_professional_summary_left(resume_data.professional_summary))
+        story.extend(self._build_contact_info(resume_data.candidate_info))
+        story.extend(self._build_skills_section(resume_data.skills))
+        story.extend(self._build_education_section(resume_data.education))
+        if resume_data.certifications:
+            story.extend(self._build_certifications_section(resume_data.certifications))
+        
+        # Frame break to switch to right column
+        story.append(self._frame_break())
+        
+        # Right column content
+        story.extend(self._build_experience_section(resume_data.work_experience))
+        if resume_data.custom_sections:
+            story.extend(self._build_custom_sections(resume_data.custom_sections))
+        
+        # Build the PDF
+        doc.build(story)
+    
+    def _create_section_header(self, title: str, width: float = 3*inch) -> list[Any]:
+        """Create a section header with title and full-width underline."""
+        elements = []
+        elements.append(Paragraph(title, self.styles['LeftColumnHeader']))
+        
+        # Create a horizontal line that extends to the edge
+        line_drawing = Drawing(width, 3)
+        line = Line(0, 1, width, 1)
+        line.strokeColor = black
+        line.strokeWidth = 1
+        line_drawing.add(line)
+        elements.append(line_drawing)
+        elements.append(Spacer(1, 0.02*inch))
+        
+        return elements
+    
+    def _frame_break(self) -> Any:
+        """Create a frame break to move to the next column."""
+        from reportlab.platypus.doctemplate import FrameBreak
+        return FrameBreak()
+    
+    def _build_candidate_header(self, candidate: CandidateInfo) -> list[Any]:
+        """Build the candidate header section."""
+        elements = []
+        elements.append(Paragraph(candidate.name, self.styles['CandidateName']))
+        elements.append(Paragraph(candidate.title, self.styles['CandidateTitle']))
+        return elements
+    
+    def _build_contact_info(self, candidate: CandidateInfo) -> list[Any]:
+        """Build the contact information section for left column."""
+        elements = []
+        elements.extend(self._create_section_header("CONTACT"))
+        
+        contact_info = [
+            f"📧 {candidate.email}",
+            f"📱 {candidate.phone}"
+        ]
+        
+        if candidate.address:
+            contact_info.append(f"📍 {candidate.address}")
+        
+        if candidate.website:
+            contact_info.append(f"🌐 {candidate.website}")
+        
+        if candidate.linkedin:
+            contact_info.append(f"💼 LinkedIn")
+        
+        if candidate.github:
+            contact_info.append(f"💻 GitHub")
+        
+        if candidate.gitlab:
+            contact_info.append(f"🦊 GitLab")
+        
+        for info in contact_info:
+            elements.append(Paragraph(info, self.styles['LeftColumnText']))
+        
+        elements.append(Spacer(1, 0.05*inch))
+        return elements
+    
+    def _build_professional_summary_left(self, summary: str) -> list[Any]:
+        """Build the professional summary section for left column."""
+        elements = []
+        elements.extend(self._create_section_header("SUMMARY"))
+        elements.append(Paragraph(summary, self.styles['LeftColumnSummary']))
+        elements.append(Spacer(1, 0.05*inch))
+        return elements
+    
+    def _build_skills_section(self, skills: dict[str, list[str]]) -> list[Any]:
+        """Build the skills section for left column."""
+        elements = []
+        elements.extend(self._create_section_header("SKILLS"))
+        
+        for category, skill_list in skills.items():
+            elements.append(Paragraph(f"<b>{category.upper()}</b>", self.styles['LeftColumnText']))
+            skills_text = " • ".join(skill_list)
+            elements.append(Paragraph(skills_text, self.styles['LeftColumnText']))
+            elements.append(Spacer(1, 0.02*inch))
+        
+        elements.append(Spacer(1, 0.05*inch))
+        return elements
+    
+    def _build_education_section(self, education: list[EducationBlock]) -> list[Any]:
+        """Build the education section for left column."""
+        elements = []
+        elements.extend(self._create_section_header("EDUCATION"))
+        
+        for edu in education:
+            elements.append(Paragraph(f"<b>{edu.degree}</b>", self.styles['LeftColumnText']))
+            elements.append(Paragraph(f"{edu.field_of_study}", self.styles['LeftColumnText']))
+            elements.append(Paragraph(f"{edu.institution}", self.styles['LeftColumnText']))
+            
+            if edu.location:
+                elements.append(Paragraph(f"{edu.location}", self.styles['LeftColumnText']))
+            
+            # Format dates
+            end_date = edu.end_date.strftime("%Y") if edu.end_date else "Present"
+            start_date = edu.start_date.strftime("%Y")
+            elements.append(Paragraph(f"{start_date} - {end_date}", self.styles['LeftColumnText']))
+            
+            if edu.gpa:
+                elements.append(Paragraph(f"GPA: {edu.gpa:.2f}", self.styles['LeftColumnText']))
+            
+            elements.append(Spacer(1, 0.05*inch))
+        
+        return elements
+    
+    def _build_certifications_section(self, certifications: list[CertificationBlock]) -> list[Any]:
+        """Build the certifications section for left column."""
+        elements = []
+        elements.extend(self._create_section_header("CERTIFICATIONS"))
+        
+        for cert in certifications:
+            elements.append(Paragraph(f"<b>{cert.title}</b>", self.styles['LeftColumnText']))
+            if cert.issuer:
+                elements.append(Paragraph(f"{cert.issuer}", self.styles['LeftColumnText']))
+            
+            if cert.issue_date:
+                issue_date = cert.issue_date.strftime("%Y")
+                expiry_text = ""
+                if cert.expiry_date:
+                    expiry_date = cert.expiry_date.strftime("%Y")
+                    expiry_text = f" - {expiry_date}"
+                elements.append(Paragraph(f"{issue_date}{expiry_text}", self.styles['LeftColumnText']))
+            
+            elements.append(Spacer(1, 0.02*inch))
+        
+        return elements
+    
+    def _build_experience_section(self, experience: list) -> list[Any]:
+        """Build the work experience section for right column."""
+        elements = []
+        elements.extend(self._create_section_header("WORK EXPERIENCE", width=4*inch))
+        
+        for exp in experience:
+            # Job title and company
+            elements.append(Paragraph(f"{exp.position}", self.styles['ExperienceTitle']))
+            
+            # Company and dates
+            end_date = exp.end_date.strftime("%b %Y") if exp.end_date else "Present"
+            start_date = exp.start_date.strftime("%b %Y")
+            company_info = f"{exp.company} | {start_date} - {end_date}"
+            elements.append(Paragraph(company_info, self.styles['ExperienceSubtitle']))
+            
+            # Summary points
+            if exp.summary:
+                for point in exp.summary:
+                    elements.append(Paragraph(f"• {point}", self.styles['RightColumnText']))
+            
+            elements.append(Spacer(1, 0.05*inch))
+        
+        return elements
+    
+    def _build_custom_sections(self, custom_sections: dict[str, list]) -> list[Any]:
+        """Build custom sections for right column."""
+        elements = []
+        
+        for section_title, blocks in custom_sections.items():
+            elements.extend(self._create_section_header(section_title.upper(), width=4*inch))
+            
+            for block in blocks:
+                if hasattr(block, 'title'):
+                    elements.append(Paragraph(f"<b>{block.title}</b>", self.styles['ExperienceTitle']))
+                
+                if hasattr(block, 'subtitle') and block.subtitle:
+                    elements.append(Paragraph(block.subtitle, self.styles['ExperienceSubtitle']))
+                
+                if hasattr(block, 'summary') and block.summary:
+                    for point in block.summary:
+                        elements.append(Paragraph(f"• {point}", self.styles['RightColumnText']))
+                
+                elements.append(Spacer(1, 0.05*inch))
+        
+        return elements
+
+
+def generate_resume_pdf(resume_data: ResumeData, output_path: str | Path) -> None:
+    """Convenience function to generate a PDF resume.
+    
+    Args:
+        resume_data: The resume data model to convert to PDF.
+        output_path: Path where the PDF should be saved.
+    """
+    generator = ResumeGenerator()
+    generator.generate_pdf(resume_data, output_path)

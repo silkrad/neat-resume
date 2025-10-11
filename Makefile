@@ -47,5 +47,6 @@ clean:
 	find . -type d -name .ruff_cache -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 	find . -type f -name "*.pyo" -delete
+	find . -type f -name "*.pdf" -delete
 	@echo "Restoring original version from git..."
 	git checkout -- src/neatresume/__about__.py

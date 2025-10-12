@@ -13,6 +13,7 @@ from __future__ import annotations
 from datetime import date
 
 import pydantic
+import phonenumbers
 from pydantic import EmailStr, HttpUrl
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
@@ -37,18 +38,22 @@ class CandidateInfo(pydantic.BaseModel):
         website: Personal website URL with validation (optional, immutable).
     """
 
-    # Required pydantic.Fields
     email: EmailStr = pydantic.Field(description="Contact email address", frozen=True)
     name: str = pydantic.Field(description="Full name", frozen=True)
     phone: PhoneNumber = pydantic.Field(description="Contact phone number", frozen=True)
     title: str = pydantic.Field(description="Professional title or job title", frozen=True)
 
-    # Optional pydantic.Fields
     address: str | None = pydantic.Field(default=None, description="Physical address or location", frozen=True)
     github: HttpUrl | None = pydantic.Field(default=None, description="GitHub profile URL", frozen=True)
     gitlab: HttpUrl | None = pydantic.Field(default=None, description="GitLab profile URL", frozen=True)
     linkedin: HttpUrl | None = pydantic.Field(default=None, description="LinkedIn profile URL", frozen=True)
     website: HttpUrl | None = pydantic.Field(default=None, description="Personal website URL", frozen=True)
+
+    @pydantic.computed_field
+    @property
+    def phone_regional(self) -> str:
+        parsed = phonenumbers.parse(self.phone)
+        return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.NATIONAL)
 
 
 class ExperienceBlock(pydantic.BaseModel):
@@ -66,17 +71,15 @@ class ExperienceBlock(pydantic.BaseModel):
         end_date: End date of the role as a date object, or None if currently employed (optional, immutable).
     """
 
-    # Required pydantic.Fields
     company: str = pydantic.Field(description="Name of the company or organization", frozen=True)
     position: str = pydantic.Field(description="Job title or position held", frozen=True)
     start_date: date = pydantic.Field(description="Start date of the role", frozen=True)
     summary: list[str] = pydantic.Field(description="List of key responsibilities or achievements in the role", frozen=True)
 
-    # Optional pydantic.Fields
     end_date: date | None = pydantic.Field(default=None, description="End date of the role", frozen=True)
 
 
-class CustomBlock(pydantic.BaseModel):
+class SectionBlock(pydantic.BaseModel):
     """Represent an immutable custom section in a resume.
 
     This model captures additional custom sections that may be included
@@ -93,11 +96,9 @@ class CustomBlock(pydantic.BaseModel):
         subtitle: Subtitle of the custom section (optional, immutable).
     """
 
-    # Required pydantic.Fields
     summary: list[str] = pydantic.Field(description="List of strings representing the content of the section", frozen=True)
     title: str = pydantic.Field(description="Title of the custom section", frozen=True)
 
-    # Optional pydantic.Fields
     end_date: date | None = pydantic.Field(default=None, description="End date associated with the section", frozen=True)
     location: str | None = pydantic.Field(default=None, description="Location associated with the section", frozen=True)
     start_date: date | None = pydantic.Field(default=None, description="Start date associated with the section", frozen=True)
@@ -116,7 +117,6 @@ class CertificationBlock(pydantic.BaseModel):
         title: Name or title of the certification or credential (required, immutable).
     """
 
-    # Required pydantic.Fields
     issue_date: date = pydantic.Field(description="Date when the certification was issued", frozen=True)
     title: str = pydantic.Field(description="Name or title of the certification or credential", frozen=True)
 
@@ -140,7 +140,6 @@ class EducationBlock(pydantic.BaseModel):
         gpa: Grade point average on a 0-4 scale (optional, immutable).
     """
 
-    # Required pydantic.Fields
     degree: str = pydantic.Field(description="Degree or qualification obtained", frozen=True)
     field_of_study: str = pydantic.Field(description="pydantic.Field of study or major", frozen=True)
     institution: str = pydantic.Field(description="Name of the educational institution", frozen=True)
@@ -148,7 +147,6 @@ class EducationBlock(pydantic.BaseModel):
     start_date: date = pydantic.Field(description="Start date of the education", frozen=True)
     summary: list[str] = pydantic.Field(description="List of key highlights or achievements during the education", frozen=True)
 
-    # Optional pydantic.Fields
     end_date: date | None = pydantic.Field(default=None, description="End date of the education", frozen=True)
     gpa: float | None = pydantic.Field(default=None, ge=0, le=4, description="Grade point average (GPA)", frozen=True)
 
@@ -168,18 +166,14 @@ class Resume(pydantic.BaseModel):
         professional_summary: Brief professional summary or objective statement (required, immutable).
         skills: Dictionary mapping skill categories to lists of specific skills (required, immutable).
         certifications: List of CertificationBlock models representing certifications obtained (optional, immutable).
-        custom_sections: Dictionary mapping custom section titles to lists of CustomBlock models (optional, immutable).
+        sections: Dictionary mapping section titles to lists of SectionBlock models (optional, immutable).
     """
 
-    # Required pydantic.Fields
     candidate_info: CandidateInfo = pydantic.Field(description="Candidate personal and contact details", frozen=True)
     education: list[EducationBlock] = pydantic.Field(description="List of educational background blocks", frozen=True)
     experience: list[ExperienceBlock] = pydantic.Field(description="List of work experience blocks", frozen=True)
     professional_summary: str = pydantic.Field(description="Brief professional summary or objective statement", frozen=True)
     skills: dict[str, list[str]] = pydantic.Field(description="Mapping of skill categories to lists of specific skills", frozen=True)
 
-    # Optional pydantic.Fields
-    certifications: list[CertificationBlock] | None = pydantic.Field(default=None, description="List of certification blocks", frozen=True)
-    custom_sections: dict[str, list[CustomBlock]] | None = pydantic.Field(
-        default=None, description="Dictionary mapping custom section titles to lists of custom blocks", frozen=True
-    )
+    certifications: list[CertificationBlock] = pydantic.Field(default_factory=list, description="List of certification blocks", frozen=True)
+    sections: dict[str, list[SectionBlock]] = pydantic.Field(default_factory=dict, description="Mapping of titles to sections", frozen=True)

@@ -80,8 +80,8 @@ def main() -> None:
         print(f"   • Skills: {len(resume_data.skills)} categories")
         if resume_data.certifications:
             print(f"   • Certifications: {len(resume_data.certifications)} entries")
-        if resume_data.custom_sections:
-            print(f"   • Custom Sections: {len(resume_data.custom_sections)} sections")
+        if resume_data.sections:
+            print(f"   • Custom Sections: {len(resume_data.sections)} sections")
 
     except FileNotFoundError as e:
         print(f"❌ Error: {e}")

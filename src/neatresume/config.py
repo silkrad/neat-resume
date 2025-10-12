@@ -10,11 +10,9 @@ from pathlib import Path
 import pydantic
 from reportlab.lib import pagesizes
 from reportlab.lib.units import inch
-from reportlab.lib import colors
-from reportlab.lib.colors import Color
 
 from neatresume.resume import Resume
-from neatresume.styles import Styles
+from neatresume.styles import Styles, Color
 
 
 class PageSize(enum.StrEnum):
@@ -25,7 +23,7 @@ class PageSize(enum.StrEnum):
     LETTER = enum.auto()
 
     @property
-    def page_size(self) -> tuple[float, float]:
+    def size(self) -> tuple[float, float]:
         match self:
             case PageSize.A3:
                 return pagesizes.A3
@@ -42,42 +40,45 @@ class PageSize(enum.StrEnum):
 
 
 class Colors(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
-
-    primary: Color = pydantic.Field(default=colors.HexColor("#003366"), frozen=True)
-    secondary: Color = pydantic.Field(default=colors.HexColor("#666666"), frozen=True)
-    accent: Color = pydantic.Field(default=colors.HexColor("#e1e8f0"), frozen=True)
+    primary: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#003366"), validate_default=True, frozen=True)
+    secondary: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#666666"), validate_default=True, frozen=True)
+    accent: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#e1e8f0"), validate_default=True, frozen=True)
 
 
 class Margins(pydantic.BaseModel):
-    left: float = pydantic.Field(default=0.25 * inch, frozen=True)
-    right: float = pydantic.Field(default=0.25 * inch, frozen=True)
-    top: float = pydantic.Field(default=0.25 * inch, frozen=True)
-    bottom: float = pydantic.Field(default=0.25 * inch, frozen=True)
+    left: float = pydantic.Field(default=0.25 * inch, validate_default=True, frozen=True)
+    right: float = pydantic.Field(default=0.25 * inch, validate_default=True, frozen=True)
+    top: float = pydantic.Field(default=0.25 * inch, validate_default=True, frozen=True)
+    bottom: float = pydantic.Field(default=0.25 * inch, validate_default=True, frozen=True)
 
 
 class Options(pydantic.BaseModel):
-    item_spacing: float = pydantic.Field(default=0.1 * inch, frozen=True)
-    section_spacing: float = pydantic.Field(default=0.3 * inch, frozen=True)
-    column_gap: float = pydantic.Field(default=0.2 * inch, frozen=True)
-    column_split: float = pydantic.Field(default=0.34, frozen=True)
+    item_spacing: float = pydantic.Field(default=0.1 * inch, validate_default=True, frozen=True)
+    section_spacing: float = pydantic.Field(default=0.3 * inch, validate_default=True, frozen=True)
+    column_gap: float = pydantic.Field(default=0.2 * inch, validate_default=True, frozen=True)
+    column_split: float = pydantic.Field(default=0.30, validate_default=True, frozen=True)
 
 
 class Page(pydantic.BaseModel):
-    colors: Colors = pydantic.Field(default_factory=Colors, frozen=True)
-    margins: Margins = pydantic.Field(default_factory=Margins, frozen=True)
-    size: PageSize = pydantic.Field(default=PageSize.LETTER, frozen=True)
-    options: Options = pydantic.Field(default_factory=Options, frozen=True)
+    colors: Colors = pydantic.Field(default_factory=Colors, validate_default=True, frozen=True)
+    margins: Margins = pydantic.Field(default_factory=Margins, validate_default=True, frozen=True)
+    paper: PageSize = pydantic.Field(default=PageSize.LETTER, validate_default=True, frozen=True)
+    options: Options = pydantic.Field(default_factory=Options, validate_default=True, frozen=True)
 
     @pydantic.computed_field
     @property
     def width(self) -> float:
-        return self.size.page_size[0]
+        return self.paper.size[0] - self.margins.left - self.margins.right
 
     @pydantic.computed_field
     @property
     def height(self) -> float:
-        return self.size.page_size[1]
+        return self.paper.size[1] - self.margins.top - self.margins.bottom
+
+    @pydantic.computed_field
+    @property
+    def height_full(self) -> float:
+        return self.paper.size[1]
 
     @pydantic.computed_field
     @property
@@ -87,13 +88,12 @@ class Page(pydantic.BaseModel):
     @pydantic.computed_field
     @property
     def column_right_width(self) -> float:
-        return self.width - self.column_left_width
+        return self.width * (1 - self.options.column_split)
 
 
 class Config(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
-
     file: Path = pydantic.Field(frozen=True)
-    page: Page = pydantic.Field(default_factory=Page, frozen=True)
     resume: Resume = pydantic.Field(frozen=True)
-    styles: Styles = pydantic.Field(default_factory=Styles, frozen=True)
+
+    page: Page = pydantic.Field(default_factory=Page, validate_default=True, frozen=True)
+    styles: Styles = pydantic.Field(default_factory=Styles, validate_default=True, frozen=True)

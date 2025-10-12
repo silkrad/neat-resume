@@ -26,7 +26,7 @@ from reportlab.graphics import renderPDF
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
-from .resume_data import ResumeData, CandidateInfo, EducationBlock, CertificationBlock
+from .resume import Resume, CandidateInfo, EducationBlock, CertificationBlock
 
 
 class LeftColumnOverflowError(Exception):
@@ -244,8 +244,8 @@ class ResumeGenerator:
             leftIndent=0.15*inch  # Indent content under headers
         ))
     
-    def generate_pdf(self, resume_data: ResumeData, output_path: str | Path) -> None:
-        """Generate a PDF resume from ResumeData.
+    def generate_pdf(self, resume_data: Resume, output_path: str | Path) -> None:
+        """Generate a PDF resume from Resume.
         
         Args:
             resume_data: The resume data model to convert to PDF.
@@ -490,16 +490,10 @@ class ResumeGenerator:
         
         for cert in certifications:
             elements.append(Paragraph(f"<b>{cert.title}</b>", self.styles['LeftColumnText']))
-            if cert.issuer:
-                elements.append(Paragraph(f"{cert.issuer}", self.styles['LeftColumnText']))
             
             if cert.issue_date:
                 issue_date = cert.issue_date.strftime("%Y")
-                expiry_text = ""
-                if cert.expiry_date:
-                    expiry_date = cert.expiry_date.strftime("%Y")
-                    expiry_text = f" - {expiry_date}"
-                elements.append(Paragraph(f"{issue_date}{expiry_text}", self.styles['LeftColumnText']))
+                elements.append(Paragraph(f"{issue_date}", self.styles['LeftColumnText']))
             
             elements.append(Spacer(1, 0.02*inch))
         
@@ -552,7 +546,7 @@ class ResumeGenerator:
         return elements
 
 
-def generate_resume_pdf(resume_data: ResumeData, output_path: str | Path) -> None:
+def generate_resume_pdf(resume_data: Resume, output_path: str | Path) -> None:
     """Convenience function to generate a PDF resume.
     
     Args:

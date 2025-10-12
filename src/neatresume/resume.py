@@ -106,24 +106,18 @@ class CustomBlock(pydantic.BaseModel):
 class CertificationBlock(pydantic.BaseModel):
     """Represent an immutable certification or credential in a resume.
 
-    This model captures details about a specific certification or credential
-    obtained by the candidate, including the title, issuer, and validity dates.
-    All fields are frozen to ensure immutability after creation.
+    This model captures essential details about a professional certification or
+    credential obtained by the candidate. All fields are frozen to ensure
+    immutability after creation.
 
     Attributes:
-        title: Title of the certification or credential (required, immutable).
-        expiry_date: Date when the certification expires (optional, immutable).
-        issue_date: Date when the certification was issued (optional, immutable).
-        issuer: Organization that issued the certification (optional, immutable).
+        issue_date: Date when the certification was issued (required, immutable).
+        title: Name or title of the certification or credential (required, immutable).
     """
 
-    # Required fields (alphabetically sorted)
-    title: str = Field(description="Title of the certification or credential", frozen=True)
-
-    # Optional fields (alphabetically sorted)
-    expiry_date: date | None = Field(default=None, description="Date when the certification expires", frozen=True)
-    issue_date: date | None = Field(default=None, description="Date when the certification was issued", frozen=True)
-    issuer: str | None = Field(default=None, description="Organization that issued the certification", frozen=True)
+    # Required fields
+    issue_date: date = Field(description="Date when the certification was issued", frozen=True)
+    title: str = Field(description="Name or title of the certification or credential", frozen=True)
 
 
 class EducationBlock(pydantic.BaseModel):
@@ -157,7 +151,7 @@ class EducationBlock(pydantic.BaseModel):
     end_date: date | None = Field(default=None, description="End date of the education", frozen=True)
     gpa: float | None = Field(default=None, ge=0, le=4, description="Grade point average (GPA)", frozen=True)
 
-class ResumeData(pydantic.BaseModel):
+class Resume(pydantic.BaseModel):
     """Represent an immutable comprehensive resume with all candidate information and sections.
 
     This model encapsulates all essential and optional sections of a professional resume,

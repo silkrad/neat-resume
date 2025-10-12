@@ -115,9 +115,7 @@
   "certifications": [
     {
       "title": "AWS Solutions Architect Professional",
-      "issuer": "Amazon Web Services",
-      "issue_date": "2023-01-15",
-      "expiry_date": "2026-01-15"
+      "issue_date": "2023-01-15"
     }
   ],
   "custom_sections": {

@@ -9,18 +9,18 @@ import json
 import sys
 from pathlib import Path
 
-from src.neatresume.resume_data import ResumeData
+from src.neatresume.resume import Resume
 from src.neatresume.generator import generate_resume_pdf
 
 
-def load_resume_from_json(json_path: str | Path) -> ResumeData:
+def load_resume_from_json(json_path: str | Path) -> Resume:
     """Load and validate resume data from a JSON file.
     
     Args:
         json_path: Path to the JSON file containing resume data.
         
     Returns:
-        ResumeData: Validated resume data model.
+        Resume: Validated resume data model.
     """
     json_path = Path(json_path)
     
@@ -32,7 +32,7 @@ def load_resume_from_json(json_path: str | Path) -> ResumeData:
         json_data = json.load(f)
     
     # Parse and validate using Pydantic
-    resume_data = ResumeData.model_validate(json_data)
+    resume_data = Resume.model_validate(json_data)
     
     return resume_data
 

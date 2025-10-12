@@ -59,9 +59,7 @@
   "certifications": [
     {
       "title": "React Developer Certification",
-      "issuer": "Meta",
-      "issue_date": "2023-02-20",
-      "expiry_date": null
+      "issue_date": "2023-02-20"
     }
   ],
   "custom_sections": {

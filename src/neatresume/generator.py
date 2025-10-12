@@ -75,6 +75,9 @@ class ResumeGenerator:
         """Initialize the resume generator with default styling."""
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
+        # Column widths will be set during PDF generation
+        self.left_col_width: float = 0
+        self.right_col_width: float = 0
         
     def _setup_custom_styles(self) -> None:
         """Set up custom paragraph styles for the resume."""
@@ -103,7 +106,7 @@ class ResumeGenerator:
             parent=self.styles['Heading2'],
             fontSize=12,
             spaceBefore=12,
-            spaceAfter=6,
+            spaceAfter=0,
             textColor=black,
             fontName='Helvetica-Bold'
         ))
@@ -123,7 +126,7 @@ class ResumeGenerator:
             parent=self.styles['SectionHeader'],
             fontSize=9,
             spaceBefore=8,
-            spaceAfter=4
+            spaceAfter=0
         ))
         
         self.styles.add(ParagraphStyle(
@@ -132,7 +135,7 @@ class ResumeGenerator:
             fontSize=8,
             spaceAfter=2,
             alignment=TA_JUSTIFY,
-            leftIndent=0.15*inch  # Indent content under headers
+            leftIndent=0  # No indentation for summary
         ))
         
         # Right column styles (optimized for one-page)
@@ -190,6 +193,10 @@ class ResumeGenerator:
         left_col_width = page_width * 0.34
         right_col_width = page_width * 0.66
         
+        # Store column widths for use in section headers
+        self.left_col_width = left_col_width - 0.1*inch  # Account for gap
+        self.right_col_width = right_col_width - 0.1*inch  # Account for gap
+        
         # Define frames for two-column layout
         left_frame = Frame(
             doc.leftMargin,
@@ -246,14 +253,26 @@ class ResumeGenerator:
         # Build the PDF
         doc.build(story)
     
-    def _create_section_header(self, title: str, width: float = 3*inch) -> list[Any]:
-        """Create a section header with title and full-width underline."""
-        elements = []
-        elements.append(Paragraph(title, self.styles['LeftColumnHeader']))
+    def _create_section_header(self, title: str, for_right_column: bool = False) -> list[Any]:
+        """Create a section header with title and column-appropriate underline.
         
-        # Create a horizontal line that extends to the edge
-        line_drawing = Drawing(width, 3)
-        line = Line(0, 1, width, 1)
+        Args:
+            title: The section title text.
+            for_right_column: If True, uses right column width and style, otherwise left column.
+        """
+        elements = []
+        
+        # Use appropriate style and width for the column
+        if for_right_column:
+            elements.append(Paragraph(title, self.styles['SectionHeader']))
+            line_width = self.right_col_width - 0.15*inch  # Account for indentation
+        else:
+            elements.append(Paragraph(title, self.styles['LeftColumnHeader']))
+            line_width = self.left_col_width - 0.15*inch  # Account for indentation
+        
+        # Create a horizontal line that fits within the column
+        line_drawing = Drawing(line_width, 3)
+        line = Line(0, 1, line_width, 1)
         line.strokeColor = black
         line.strokeWidth = 1
         line_drawing.add(line)
@@ -277,7 +296,7 @@ class ResumeGenerator:
     def _build_contact_info(self, candidate: CandidateInfo) -> list[Any]:
         """Build the contact information section for left column."""
         elements = []
-        elements.extend(self._create_section_header("CONTACT"))
+        elements.extend(self._create_section_header("CONTACT", for_right_column=False))
         
         contact_info = [
             f"📧 {candidate.email}",
@@ -308,7 +327,6 @@ class ResumeGenerator:
     def _build_professional_summary_left(self, summary: str) -> list[Any]:
         """Build the professional summary section for left column."""
         elements = []
-        elements.extend(self._create_section_header("SUMMARY"))
         elements.append(Paragraph(summary, self.styles['LeftColumnSummary']))
         elements.append(Spacer(1, 0.05*inch))
         return elements
@@ -316,7 +334,7 @@ class ResumeGenerator:
     def _build_skills_section(self, skills: dict[str, list[str]]) -> list[Any]:
         """Build the skills section for left column."""
         elements = []
-        elements.extend(self._create_section_header("SKILLS"))
+        elements.extend(self._create_section_header("SKILLS", for_right_column=False))
         
         for category, skill_list in skills.items():
             elements.append(Paragraph(f"<b>{category.upper()}</b>", self.styles['LeftColumnText']))
@@ -330,7 +348,7 @@ class ResumeGenerator:
     def _build_education_section(self, education: list[EducationBlock]) -> list[Any]:
         """Build the education section for left column."""
         elements = []
-        elements.extend(self._create_section_header("EDUCATION"))
+        elements.extend(self._create_section_header("EDUCATION", for_right_column=False))
         
         for edu in education:
             elements.append(Paragraph(f"<b>{edu.degree}</b>", self.styles['LeftColumnText']))
@@ -355,7 +373,7 @@ class ResumeGenerator:
     def _build_certifications_section(self, certifications: list[CertificationBlock]) -> list[Any]:
         """Build the certifications section for left column."""
         elements = []
-        elements.extend(self._create_section_header("CERTIFICATIONS"))
+        elements.extend(self._create_section_header("CERTIFICATIONS", for_right_column=False))
         
         for cert in certifications:
             elements.append(Paragraph(f"<b>{cert.title}</b>", self.styles['LeftColumnText']))
@@ -377,7 +395,7 @@ class ResumeGenerator:
     def _build_experience_section(self, experience: list) -> list[Any]:
         """Build the work experience section for right column."""
         elements = []
-        elements.extend(self._create_section_header("WORK EXPERIENCE", width=4*inch))
+        elements.extend(self._create_section_header("WORK EXPERIENCE", for_right_column=True))
         
         for exp in experience:
             # Job title and company
@@ -403,7 +421,7 @@ class ResumeGenerator:
         elements = []
         
         for section_title, blocks in custom_sections.items():
-            elements.extend(self._create_section_header(section_title.upper(), width=4*inch))
+            elements.extend(self._create_section_header(section_title.upper(), for_right_column=True))
             
             for block in blocks:
                 if hasattr(block, 'title'):

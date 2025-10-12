@@ -40,7 +40,7 @@ def load_resume_from_json(json_path: str | Path) -> ResumeData:
 def main() -> None:
     """Main function for JSON-to-PDF conversion."""
     # Default to Alex Chen's resume if no argument provided
-    json_file = "alex_chen_resume.json"
+    json_file = "tests/examples/alex_chen_resume.json"
     
     # Allow command line argument for JSON file
     if len(sys.argv) > 1:
@@ -83,9 +83,13 @@ def main() -> None:
     except FileNotFoundError as e:
         print(f"❌ Error: {e}")
         print(f"   Available JSON files:")
-        json_files = list(Path(".").glob("*.json"))
-        for file in json_files:
-            print(f"   - {file.name}")
+        examples_dir = Path("tests/examples")
+        if examples_dir.exists():
+            json_files = list(examples_dir.glob("*.json"))
+            for file in json_files:
+                print(f"   - tests/examples/{file.name}")
+        else:
+            print(f"   - No examples directory found at {examples_dir}")
         sys.exit(1)
         
     except json.JSONDecodeError as e:

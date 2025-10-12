@@ -29,6 +29,67 @@ from reportlab.pdfbase.ttfonts import TTFont
 from .resume_data import ResumeData, CandidateInfo, EducationBlock, CertificationBlock
 
 
+class LeftColumnOverflowError(Exception):
+    """Raised when the left column content spills into the right column."""
+    
+    def __init__(self, page_number: int) -> None:
+        """Initialize with page details.
+        
+        Args:
+            page_number: The page number where the overflow was detected.
+        """
+        self.page_number = page_number
+        super().__init__(
+            f"Left column content spilled into the right column on page {page_number}. "
+            f"Please reduce content in the left column sections (professional summary, "
+            f"contact info, skills, education, or certifications) to fit within one page."
+        )
+
+
+class ColumnAwareDoc(BaseDocTemplate):
+    """Detect true column overflow and page changes using handle_flowable."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._last_page = 1
+        self._last_frame = 0
+        self._left_column_finished = False
+        self._in_left_column_content = False
+
+    def handle_flowable(self, flowables):
+        """Called each time a flowable is drawn or moved."""
+        # Before drawing, record the page/frame
+        current_page = self.page
+        try:
+            frame_index = self.pageTemplate.frames.index(self.frame)
+        except (AttributeError, ValueError):
+            frame_index = 0
+
+        # Call normal behavior
+        super().handle_flowable(flowables)
+
+        new_page = self.page
+        try:
+            new_frame_index = self.pageTemplate.frames.index(self.frame)
+        except (AttributeError, ValueError):
+            new_frame_index = 0
+
+        # Track if we're processing left column content
+        if new_frame_index == 0:  # Left column
+            self._in_left_column_content = True
+        elif new_frame_index == 1 and self._in_left_column_content and not self._left_column_finished:
+            # We've spilled to right column but haven't marked left column as finished
+            # This indicates overflow
+            raise LeftColumnOverflowError(new_page)
+
+        self._last_page = new_page
+        self._last_frame = new_frame_index
+
+    def mark_left_column_finished(self):
+        """Mark that left column content is intentionally finished."""
+        self._left_column_finished = True
+
+
 class TintedPageTemplate(PageTemplate):
     """Custom PageTemplate with a tinted background for the left column."""
     
@@ -192,8 +253,8 @@ class ResumeGenerator:
         """
         output_path = Path(output_path)
         
-        # Set up the document with custom page template
-        doc = BaseDocTemplate(
+        # Set up the document with column-aware overflow detection
+        doc = ColumnAwareDoc(
             str(output_path),
             pagesize=letter,
             rightMargin=0.25*inch,
@@ -201,6 +262,9 @@ class ResumeGenerator:
             topMargin=0.25*inch,
             bottomMargin=0.25*inch
         )
+        
+        # Store document reference for left column marking
+        self._current_doc = doc
         
         # Calculate column widths (34% / 66% split)
         page_width = letter[0] - doc.leftMargin - doc.rightMargin
@@ -257,7 +321,7 @@ class ResumeGenerator:
             story.extend(self._build_certifications_section(resume_data.certifications))
         
         # Frame break to switch to right column
-        story.append(self._frame_break())
+        story.extend(self._frame_break())
         
         # Right column content
         story.extend(self._build_experience_section(resume_data.work_experience))
@@ -298,7 +362,26 @@ class ResumeGenerator:
     def _frame_break(self) -> Any:
         """Create a frame break to move to the next column."""
         from reportlab.platypus.doctemplate import FrameBreak
-        return FrameBreak()
+        from reportlab.platypus.flowables import Flowable
+        
+        class LeftColumnFinishedMarker(Flowable):
+            """Marker flowable that indicates intentional end of left column."""
+            
+            def __init__(self, doc_ref):
+                super().__init__()
+                self.doc_ref = doc_ref
+                
+            def wrap(self, availWidth, availHeight):
+                # Mark left column as finished when this marker is processed
+                if hasattr(self.doc_ref, 'mark_left_column_finished'):
+                    self.doc_ref.mark_left_column_finished()
+                return (0, 0)  # Takes no space
+            
+            def draw(self):
+                pass  # Nothing to draw
+        
+        # Return the marker followed by frame break
+        return [LeftColumnFinishedMarker(self._current_doc), FrameBreak()]
     
     def _build_candidate_header(self, candidate: CandidateInfo) -> list[Any]:
         """Build the candidate header section."""

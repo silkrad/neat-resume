@@ -23,6 +23,8 @@ from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
 from reportlab.graphics.shapes import Line, Drawing
 from reportlab.graphics import renderPDF
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 from .resume_data import ResumeData, CandidateInfo, EducationBlock, CertificationBlock
 
@@ -74,10 +76,22 @@ class ResumeGenerator:
     def __init__(self) -> None:
         """Initialize the resume generator with default styling."""
         self.styles = getSampleStyleSheet()
+        self._register_fonts()
         self._setup_custom_styles()
         # Column widths will be set during PDF generation
         self.left_col_width: float = 0
         self.right_col_width: float = 0
+        
+    def _register_fonts(self) -> None:
+        """Register additional fonts including Symbola for Unicode support."""
+        try:
+            # Try to register Symbola font for Unicode symbols using system path
+            pdfmetrics.registerFont(TTFont('Symbola', '/usr/share/fonts/truetype/ancient-scripts/Symbola_hint.ttf'))
+        except Exception as e:
+            print(f"Warning: Could not register Symbola font: {e}")
+            # If Symbola font is not available, continue without it
+            # The Unicode characters will still work with default fonts in most cases
+            pass
         
     def _setup_custom_styles(self) -> None:
         """Set up custom paragraph styles for the resume."""
@@ -298,25 +312,35 @@ class ResumeGenerator:
         elements = []
         elements.extend(self._create_section_header("CONTACT", for_right_column=False))
         
+        # Use Symbola font specifically for icons
+        def format_contact_line(icon: str, text: str) -> str:
+            try:
+                # Check if Symbola font is available
+                pdfmetrics.getFont('Symbola')
+                return f'<font name="Symbola">{icon}</font> {text}'
+            except Exception:
+                # Fallback to Unicode without specific font
+                return f'{icon} {text}'
+        
         contact_info = [
-            f"📧 {candidate.email}",
-            f"📱 {candidate.phone}"
+            format_contact_line("\U0001F4DE", candidate.phone),
+            format_contact_line("\U0001F582", candidate.email)
         ]
         
         if candidate.address:
-            contact_info.append(f"📍 {candidate.address}")
+            contact_info.append(format_contact_line("\U0001F4CD", candidate.address))
         
         if candidate.website:
-            contact_info.append(f"🌐 {candidate.website}")
+            contact_info.append(format_contact_line("\U0001F310", candidate.website))
         
         if candidate.linkedin:
-            contact_info.append(f"💼 LinkedIn")
+            contact_info.append(format_contact_line("\U0001F310", "LinkedIn"))
         
         if candidate.github:
-            contact_info.append(f"💻 GitHub")
+            contact_info.append(format_contact_line("\U0001F310", "GitHub"))
         
         if candidate.gitlab:
-            contact_info.append(f"🦊 GitLab")
+            contact_info.append(format_contact_line("\U0001F310", "GitLab"))
         
         for info in contact_info:
             elements.append(Paragraph(info, self.styles['LeftColumnText']))
@@ -336,11 +360,17 @@ class ResumeGenerator:
         elements = []
         elements.extend(self._create_section_header("SKILLS", for_right_column=False))
         
-        for category, skill_list in skills.items():
+        skill_categories = list(skills.items())
+        for i, (category, skill_list) in enumerate(skill_categories):
             elements.append(Paragraph(f"<b>{category.upper()}</b>", self.styles['LeftColumnText']))
             skills_text = " • ".join(skill_list)
             elements.append(Paragraph(skills_text, self.styles['LeftColumnText']))
-            elements.append(Spacer(1, 0.02*inch))
+            
+            # Add more space between categories, but not after the last one
+            if i < len(skill_categories) - 1:
+                elements.append(Spacer(1, 0.08*inch))
+            else:
+                elements.append(Spacer(1, 0.02*inch))
         
         elements.append(Spacer(1, 0.05*inch))
         return elements

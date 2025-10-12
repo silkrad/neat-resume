@@ -11,7 +11,7 @@
     "Machine Learning": ["Scikit-learn", "TensorFlow", "Pandas"],
     "Visualization": ["Matplotlib", "Seaborn", "Tableau"]
   },
-  "work_experience": [
+  "experience": [
     {
       "position": "Data Scientist",
       "company": "DataTech Corp",

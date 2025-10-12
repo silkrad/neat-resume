@@ -9,8 +9,9 @@ import json
 import sys
 from pathlib import Path
 
-from src.neatresume.resume import Resume
-from src.neatresume.generator import generate_resume_pdf
+from neatresume.resume import Resume
+from neatresume.config import Config
+from neatresume.generator import Generator
 
 
 def load_resume_from_json(json_path: str | Path) -> Resume:
@@ -62,8 +63,10 @@ def main() -> None:
         print(f"✅ Successfully loaded resume for {resume_data.candidate_info.name}")
         print(f"🎨 Generating PDF: {output_file}...")
 
-        # Generate PDF
-        generate_resume_pdf(resume_data, output_file)
+        # Generate PDF using the new Generator
+        config = Config(file=output_file, resume=resume_data)
+        generator = Generator(config=config)
+        generator.generate()
 
         print("✅ PDF generated successfully!")
         print(f"   File: {output_file}")
@@ -72,7 +75,7 @@ def main() -> None:
         # Show summary
         print("\n📊 Resume Summary:")
         print(f"   • Title: {resume_data.candidate_info.title}")
-        print(f"   • Work Experience: {len(resume_data.work_experience)} positions")
+        print(f"   • Work Experience: {len(resume_data.experience)} positions")
         print(f"   • Education: {len(resume_data.education)} entries")
         print(f"   • Skills: {len(resume_data.skills)} categories")
         if resume_data.certifications:

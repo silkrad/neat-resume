@@ -10,22 +10,23 @@ from ResumeData models using ReportLab with a two-column layout.
 
 from __future__ import annotations
 
-import enum
 import uuid
 from pathlib import Path
 from typing import Any, ClassVar
 
 import pydantic
-from reportlab.lib import styles
-from reportlab.lib.styles import ParagraphStyle, StyleSheet1
 from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
+from reportlab.lib import colors
 from reportlab.platypus.frames import Frame
+from reportlab.lib.units import inch
+from reportlab.platypus import Paragraph, Spacer
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
+from reportlab.graphics.shapes import Line, Drawing
 
 from neatresume.config import Config, Page
+from neatresume.resume import CandidateInfo, EducationBlock, CertificationBlock
 from neatresume.styles import StyleFont
 
 
@@ -75,9 +76,9 @@ class PageTemplateFactory(pydantic.BaseModel):
         )
         frames.append(left_frame)
         frames.append(right_frame)
-        return PageTemplate(id=TemplateID.TEMPLATE_MULTI_COLUMN, beforeDrawPage=self._before_draw_page_multi_column, frames=frames)
+        return PageTemplate(id=TemplateID.TEMPLATE_MULTI_COLUMN, onPage=self._on_page_multi_column, frames=frames)
 
-    def _before_draw_page_multi_column(self, canvas: Canvas, doc: BaseDocTemplate) -> None:
+    def _on_page_multi_column(self, canvas: Canvas, doc: BaseDocTemplate) -> None:
         _ = doc
         column_boundary = self.page.margins.left + self.page.column_left_width
         canvas.saveState()
@@ -99,9 +100,156 @@ class Generator(pydantic.BaseModel):
         self._template_multi_column = template_factory.create_template_multi_column()
         pdfmetrics.registerFont(TTFont(StyleFont.SYMBOLA.font_name, "/usr/share/fonts/truetype/ancient-scripts/Symbola_hint.ttf"))
 
-    def generate(self, **kwargs: Any) -> None:
+    def generate(self) -> None:
         doc = self._document
         doc.addPageTemplates([self._template_multi_column])
         story: list = []
+        story.extend(self._build_candidate_header(self.config.resume.candidate_info))
+        story.append(Spacer(1, 0.1 * inch))
+        story.extend(self._build_professional_summary_left(self.config.resume.professional_summary))
+        story.extend(self._build_contact_info(self.config.resume.candidate_info))
+        story.extend(self._build_skills_section(self.config.resume.skills))
+        story.extend(self._build_education_section(self.config.resume.education))
+        if self.config.resume.certifications:
+            story.extend(self._build_certifications_section(self.config.resume.certifications))
+        story.extend(self._frame_break())
+        story.extend(self._build_experience_section(self.config.resume.experience))
+        if self.config.resume.custom_sections:
+            story.extend(self._build_custom_sections(self.config.resume.custom_sections))
+        doc.build(story)
 
-        doc.build(story)  # Placeholder for the story list
+    def _create_section_header(self, title: str) -> list[Any]:
+        elements = []
+        elements.append(Paragraph(title, self.config.styles.section_header.style))
+        line_width = self.config.page.column_left_width - 0.15 * inch
+        line_drawing = Drawing(line_width, 3)
+        line = Line(0, 1, line_width, 1)
+        line.strokeColor = colors.black
+        line.strokeWidth = 1
+        line_drawing.add(line)
+        elements.append(line_drawing)
+        elements.append(Spacer(1, 0.02 * inch))
+        return elements
+
+    def _frame_break(self) -> list[Any]:
+        """Create a frame break to move to the next column."""
+        from reportlab.platypus.doctemplate import FrameBreak
+
+        return [FrameBreak()]
+
+    def _build_candidate_header(self, candidate: CandidateInfo) -> list[Any]:
+        elements = []
+        elements.append(Paragraph(candidate.name, self.config.styles.candidate_name.style))
+        elements.append(Paragraph(candidate.title, self.config.styles.candidate_title.style))
+        return elements
+
+    def _build_contact_info(self, candidate: CandidateInfo) -> list[Any]:
+        elements = []
+        elements.extend(self._create_section_header("CONTACT"))
+
+        def format_contact_line(icon: str, text: str) -> str:
+            try:
+                pdfmetrics.getFont("Symbola")
+                return f'<font name="Symbola">{icon}</font> {text}'
+            except Exception:
+                return f"{icon} {text}"
+
+        contact_info = [
+            format_contact_line("\U0001f4de", candidate.phone),
+            format_contact_line("\U0001f582", candidate.email),
+        ]
+        if candidate.address:
+            contact_info.append(format_contact_line("\U0001f4cd", candidate.address))
+        if candidate.website:
+            contact_info.append(format_contact_line("\U0001f310", candidate.website))
+        if candidate.linkedin:
+            contact_info.append(format_contact_line("\U0001f310", "LinkedIn"))
+        if candidate.github:
+            contact_info.append(format_contact_line("\U0001f310", "GitHub"))
+        if candidate.gitlab:
+            contact_info.append(format_contact_line("\U0001f310", "GitLab"))
+        for info in contact_info:
+            elements.append(Paragraph(info, self.config.styles.block_text.style))
+        elements.append(Spacer(1, 0.05 * inch))
+        return elements
+
+    def _build_professional_summary_left(self, summary: str) -> list[Any]:
+        elements = []
+        elements.append(Paragraph(summary, self.config.styles.block_text.style))
+        elements.append(Spacer(1, 0.05 * inch))
+        return elements
+
+    def _build_skills_section(self, skills: dict[str, list[str]]) -> list[Any]:
+        elements = []
+        elements.extend(self._create_section_header("SKILLS"))
+        skill_categories = list(skills.items())
+        for i, (category, skill_list) in enumerate(skill_categories):
+            elements.append(Paragraph(f"<b>{category.upper()}</b>", self.config.styles.block_text.style))
+            skills_text = " • ".join(skill_list)
+            elements.append(Paragraph(skills_text, self.config.styles.block_text.style))
+            if i < len(skill_categories) - 1:
+                elements.append(Spacer(1, 0.08 * inch))
+            else:
+                elements.append(Spacer(1, 0.02 * inch))
+        elements.append(Spacer(1, 0.05 * inch))
+        return elements
+
+    def _build_education_section(self, education: list[EducationBlock]) -> list[Any]:
+        elements = []
+        elements.extend(self._create_section_header("EDUCATION"))
+
+        for edu in education:
+            elements.append(Paragraph(f"<b>{edu.degree}</b>", self.config.styles.block_text.style))
+            elements.append(Paragraph(f"{edu.field_of_study}", self.config.styles.block_text.style))
+            elements.append(Paragraph(f"{edu.institution}", self.config.styles.block_text.style))
+            if edu.location:
+                elements.append(Paragraph(f"{edu.location}", self.config.styles.block_text.style))
+            end_date = edu.end_date.strftime("%Y") if edu.end_date else "Present"
+            start_date = edu.start_date.strftime("%Y")
+            elements.append(Paragraph(f"{start_date} - {end_date}", self.config.styles.block_text.style))
+            if edu.gpa:
+                elements.append(Paragraph(f"GPA: {edu.gpa:.2f}", self.config.styles.block_text.style))
+            elements.append(Spacer(1, 0.05 * inch))
+        return elements
+
+    def _build_certifications_section(self, certifications: list[CertificationBlock]) -> list[Any]:
+        elements = []
+        elements.extend(self._create_section_header("CERTIFICATIONS"))
+
+        for cert in certifications:
+            elements.append(Paragraph(f"<b>{cert.title}</b>", self.config.styles.block_text.style))
+            if cert.issue_date:
+                issue_date = cert.issue_date.strftime("%Y")
+                elements.append(Paragraph(f"{issue_date}", self.config.styles.block_text.style))
+            elements.append(Spacer(1, 0.02 * inch))
+        return elements
+
+    def _build_experience_section(self, experience: list) -> list[Any]:
+        elements = []
+        elements.extend(self._create_section_header("WORK EXPERIENCE"))
+        for exp in experience:
+            elements.append(Paragraph(f"{exp.position}", self.config.styles.block_text.style))
+            end_date = exp.end_date.strftime("%b %Y") if exp.end_date else "Present"
+            start_date = exp.start_date.strftime("%b %Y")
+            company_info = f"{exp.company} | {start_date} - {end_date}"
+            elements.append(Paragraph(company_info, self.config.styles.block_text.style))
+            if exp.summary:
+                for point in exp.summary:
+                    elements.append(Paragraph(f"• {point}", self.config.styles.block_text.style))
+            elements.append(Spacer(1, 0.05 * inch))
+        return elements
+
+    def _build_custom_sections(self, custom_sections: dict[str, list]) -> list[Any]:
+        elements = []
+        for section_title, blocks in custom_sections.items():
+            elements.extend(self._create_section_header(section_title.upper()))
+            for block in blocks:
+                if hasattr(block, "title"):
+                    elements.append(Paragraph(f"<b>{block.title}</b>", self.config.styles.block_title.style))
+                if hasattr(block, "subtitle") and block.subtitle:
+                    elements.append(Paragraph(block.subtitle, self.config.styles.block_subtitle.style))
+                if hasattr(block, "summary") and block.summary:
+                    for point in block.summary:
+                        elements.append(Paragraph(f"• {point}", self.config.styles.block_text.style))
+                elements.append(Spacer(1, 0.05 * inch))
+        return elements

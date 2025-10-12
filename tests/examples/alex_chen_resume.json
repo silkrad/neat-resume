@@ -16,7 +16,7 @@
     "Database": ["PostgreSQL", "MongoDB", "Redis"],
     "DevOps": ["Docker", "AWS", "GitHub Actions", "Vercel"]
   },
-  "work_experience": [
+  "experience": [
     {
       "position": "Full Stack Developer",
       "company": "InnovateTech",

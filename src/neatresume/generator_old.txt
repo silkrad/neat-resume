@@ -335,7 +335,7 @@ class ResumeGenerator:
         story.extend(self._frame_break())
 
         # Right column content
-        story.extend(self._build_experience_section(resume_data.work_experience))
+        story.extend(self._build_experience_section(resume_data.experience))
         if resume_data.custom_sections:
             story.extend(self._build_custom_sections(resume_data.custom_sections))
 

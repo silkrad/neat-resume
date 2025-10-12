@@ -164,9 +164,9 @@ class Resume(pydantic.BaseModel):
     Attributes:
         candidate_info: CandidateInfo model containing personal and contact details (required, immutable).
         education: List of EducationBlock models representing educational background (required, immutable).
+        experience: List of ExperienceBlock models representing work history (required, immutable).
         professional_summary: Brief professional summary or objective statement (required, immutable).
         skills: Dictionary mapping skill categories to lists of specific skills (required, immutable).
-        work_experience: List of ExperienceBlock models representing work history (required, immutable).
         certifications: List of CertificationBlock models representing certifications obtained (optional, immutable).
         custom_sections: Dictionary mapping custom section titles to lists of CustomBlock models (optional, immutable).
     """
@@ -174,9 +174,9 @@ class Resume(pydantic.BaseModel):
     # Required pydantic.Fields
     candidate_info: CandidateInfo = pydantic.Field(description="Candidate personal and contact details", frozen=True)
     education: list[EducationBlock] = pydantic.Field(description="List of educational background blocks", frozen=True)
+    experience: list[ExperienceBlock] = pydantic.Field(description="List of work experience blocks", frozen=True)
     professional_summary: str = pydantic.Field(description="Brief professional summary or objective statement", frozen=True)
     skills: dict[str, list[str]] = pydantic.Field(description="Mapping of skill categories to lists of specific skills", frozen=True)
-    work_experience: list[ExperienceBlock] = pydantic.Field(description="List of work experience blocks", frozen=True)
 
     # Optional pydantic.Fields
     certifications: list[CertificationBlock] | None = pydantic.Field(default=None, description="List of certification blocks", frozen=True)

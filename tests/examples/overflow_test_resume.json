@@ -15,7 +15,7 @@
     "Cloud": ["AWS", "Azure", "Docker", "Kubernetes"],
     "Architecture": ["Microservices", "API Design"]
   },
-  "work_experience": [
+  "experience": [
     {
       "position": "Senior Software Architect",
       "company": "TechCorp Solutions",

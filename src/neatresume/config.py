@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import enum
+from datetime import date
 from pathlib import Path
 
 import pydantic
@@ -55,7 +56,7 @@ class Margins(pydantic.BaseModel):
 class Options(pydantic.BaseModel):
     item_spacing: float = pydantic.Field(default=0.1 * inch, validate_default=True, frozen=True)
     section_spacing: float = pydantic.Field(default=0.3 * inch, validate_default=True, frozen=True)
-    column_gap: float = pydantic.Field(default=0.2 * inch, validate_default=True, frozen=True)
+    column_gap: float = pydantic.Field(default=0.1 * inch, validate_default=True, frozen=True)
     column_split: float = pydantic.Field(default=0.30, validate_default=True, frozen=True)
 
 
@@ -92,8 +93,17 @@ class Page(pydantic.BaseModel):
 
 
 class Config(pydantic.BaseModel):
-    file: Path = pydantic.Field(frozen=True)
     resume: Resume = pydantic.Field(frozen=True)
 
+    file: Path | None = pydantic.Field(default=None, validate_default=True)
     page: Page = pydantic.Field(default_factory=Page, validate_default=True, frozen=True)
     styles: Styles = pydantic.Field(default_factory=Styles, validate_default=True, frozen=True)
+
+    @pydantic.model_validator(mode="after")
+    def generate_filename(self) -> Config:
+        """Generate filename if not provided, based on candidate name and current date."""
+        if not self.file:
+            candidate_name = self.resume.candidate.name.lower().replace(" ", "_")
+            current_date = date.today().strftime("%Y-%m-%d")
+            self.file = Path(f"{candidate_name}_resume_{current_date}.pdf")
+        return self

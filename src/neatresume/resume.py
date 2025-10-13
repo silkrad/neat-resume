@@ -160,20 +160,20 @@ class Resume(pydantic.BaseModel):
     sections. All pydantic.Fields are frozen to ensure immutability after creation.
 
     Attributes:
-        candidate_info: CandidateInfo model containing personal and contact details (required, immutable).
+        candidate: CandidateInfo model containing personal and contact details (required, immutable).
         education: List of EducationBlock models representing educational background (required, immutable).
         experience: List of ExperienceBlock models representing work history (required, immutable).
-        professional_summary: Brief professional summary or objective statement (required, immutable).
         skills: Dictionary mapping skill categories to lists of specific skills (required, immutable).
+        summary: Brief professional summary or objective statement (required, immutable).
         certifications: List of CertificationBlock models representing certifications obtained (optional, immutable).
         sections: Dictionary mapping section titles to lists of SectionBlock models (optional, immutable).
     """
 
-    candidate_info: CandidateInfo = pydantic.Field(description="Candidate personal and contact details", frozen=True)
+    candidate: CandidateInfo = pydantic.Field(description="Candidate personal and contact details", frozen=True)
     education: list[EducationBlock] = pydantic.Field(description="List of educational background blocks", frozen=True)
     experience: list[ExperienceBlock] = pydantic.Field(description="List of work experience blocks", frozen=True)
-    professional_summary: str = pydantic.Field(description="Brief professional summary or objective statement", frozen=True)
     skills: dict[str, list[str]] = pydantic.Field(description="Mapping of skill categories to lists of specific skills", frozen=True)
+    summary: str = pydantic.Field(description="Brief professional summary or objective statement", frozen=True)
 
     certifications: list[CertificationBlock] = pydantic.Field(default_factory=list, description="List of certification blocks", frozen=True)
     sections: dict[str, list[SectionBlock]] = pydantic.Field(default_factory=dict, description="Mapping of titles to sections", frozen=True)

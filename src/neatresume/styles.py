@@ -14,6 +14,17 @@ from reportlab.lib.enums import TA_LEFT, TA_JUSTIFY
 from reportlab.lib.units import inch
 
 
+class StyleFont(enum.StrEnum):
+    HELVETICA = enum.auto()
+    HELVETICA_BOLD = enum.auto()
+    HELVETICA_OBLIQUE = enum.auto()
+    SYMBOLA = enum.auto()
+
+    @property
+    def font_name(self) -> str:
+        return self.value.title().replace("_", "-")
+
+
 class Color(pydantic.BaseModel):
     hex_string: str = pydantic.Field(frozen=True)
 
@@ -29,17 +40,6 @@ class Color(pydantic.BaseModel):
             return v
         except (ValueError, TypeError) as e:
             raise ValueError(f"Invalid hex color '{v}': {e}") from e
-
-
-class StyleFont(enum.StrEnum):
-    HELVETICA = enum.auto()
-    HELVETICA_BOLD = enum.auto()
-    HELVETICA_OBLIQUE = enum.auto()
-    SYMBOLA = enum.auto()
-
-    @property
-    def font_name(self) -> str:
-        return self.value.title().replace("_", "-")
 
 
 class NormalStyleFactory(pydantic.BaseModel):

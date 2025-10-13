@@ -35,6 +35,9 @@ dependencies = [
   "reportlab",
 ]
 
+[project.scripts]
+neatresume = "neatresume.__main__:main"
+
 [project.urls]
 Documentation = "https://github.com/silkrad/neatresume#readme"
 Issues = "https://github.com/silkrad/neatresume/issues"

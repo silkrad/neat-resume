@@ -113,12 +113,13 @@ class CertificationBlock(pydantic.BaseModel):
     immutability after creation.
 
     Attributes:
-        issue_date: Date when the certification was issued (required, immutable).
         title: Name or title of the certification or credential (required, immutable).
+        issue_date: Date when the certification was issued (optional, immutable).
     """
 
-    issue_date: date = pydantic.Field(description="Date when the certification was issued", frozen=True)
     title: str = pydantic.Field(description="Name or title of the certification or credential", frozen=True)
+
+    issue_date: date | None = pydantic.Field(default=None, description="Date when the certification was issued", frozen=True)
 
 
 class EducationBlock(pydantic.BaseModel):

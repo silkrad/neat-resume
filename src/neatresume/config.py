@@ -54,10 +54,11 @@ class Margins(pydantic.BaseModel):
 
 
 class Options(pydantic.BaseModel):
+    column_gap: float = pydantic.Field(default=0.1 * inch, validate_default=True, frozen=True)
+    indent_spacing: float = pydantic.Field(default=0.15 * inch, validate_default=True, frozen=True)
     item_spacing: float = pydantic.Field(default=0.1 * inch, validate_default=True, frozen=True)
     section_spacing: float = pydantic.Field(default=0.3 * inch, validate_default=True, frozen=True)
-    column_gap: float = pydantic.Field(default=0.1 * inch, validate_default=True, frozen=True)
-    column_split: float = pydantic.Field(default=0.30, validate_default=True, frozen=True)
+    sidebar_size: float = pydantic.Field(default=0.34, validate_default=True, frozen=True)
 
 
 class Page(pydantic.BaseModel):
@@ -66,30 +67,29 @@ class Page(pydantic.BaseModel):
     paper: PageSize = pydantic.Field(default=PageSize.LETTER, validate_default=True, frozen=True)
     options: Options = pydantic.Field(default_factory=Options, validate_default=True, frozen=True)
 
-    @pydantic.computed_field
     @property
-    def width(self) -> float:
+    def content_width(self) -> float:
         return self.paper.size[0] - self.margins.left - self.margins.right
 
-    @pydantic.computed_field
     @property
-    def height(self) -> float:
+    def content_height(self) -> float:
         return self.paper.size[1] - self.margins.top - self.margins.bottom
 
-    @pydantic.computed_field
     @property
-    def height_full(self) -> float:
+    def page_height(self) -> float:
         return self.paper.size[1]
 
-    @pydantic.computed_field
     @property
-    def column_left_width(self) -> float:
-        return self.width * self.options.column_split
+    def page_width(self) -> float:
+        return self.paper.size[0]
 
-    @pydantic.computed_field
     @property
-    def column_right_width(self) -> float:
-        return self.width * (1 - self.options.column_split)
+    def main_width(self) -> float:
+        return self.content_width * (1 - self.options.sidebar_size)
+
+    @property
+    def sidebar_width(self) -> float:
+        return self.content_width * self.options.sidebar_size
 
 
 class Config(pydantic.BaseModel):

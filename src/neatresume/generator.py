@@ -17,13 +17,13 @@ from typing import Any, ClassVar
 import pydantic
 from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
 from reportlab.lib import colors
+from reportlab.lib.enums import TA_LEFT, TA_RIGHT
 from reportlab.platypus.frames import Frame
 from reportlab.lib.units import inch
-from reportlab.platypus import Paragraph, Spacer
+from reportlab.platypus import Paragraph, Spacer, HRFlowable, Table, TableStyle
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.graphics.shapes import Line, Drawing
 
 from neatresume.config import Config, Page
 from neatresume.resume import CandidateInfo, EducationBlock, CertificationBlock
@@ -61,16 +61,16 @@ class PageTemplateFactory(pydantic.BaseModel):
         left_frame = Frame(
             x1=self.page.margins.left,
             y1=self.page.margins.bottom,
-            width=self.page.column_left_width - self.page.options.column_gap,  # Small gap between columns
-            height=self.page.height,
+            width=self.page.sidebar_width - self.page.options.column_gap,  # Small gap between columns
+            height=self.page.content_height,
             id=TemplateID.FRAME_LEFT,
             showBoundary=0,
         )
         right_frame = Frame(
-            x1=self.page.margins.left + self.page.column_left_width + self.page.options.column_gap,
+            x1=self.page.margins.left + self.page.sidebar_width + self.page.options.column_gap,
             y1=self.page.margins.bottom,
-            width=self.page.column_right_width - self.page.options.column_gap,
-            height=self.page.height,
+            width=self.page.main_width - self.page.options.column_gap,
+            height=self.page.content_height,
             id=TemplateID.FRAME_RIGHT,
             showBoundary=0,
         )
@@ -80,11 +80,10 @@ class PageTemplateFactory(pydantic.BaseModel):
 
     def _on_page_multi_column(self, canvas: Canvas, doc: BaseDocTemplate) -> None:
         _ = doc
-        # Match old generator: tint entire left column area including gap
-        column_boundary = self.page.margins.left + self.page.column_left_width
+        column_boundary = self.page.margins.left + self.page.sidebar_width
         canvas.saveState()
         canvas.setFillColor(self.page.colors.accent.hex_color)
-        canvas.rect(0, 0, column_boundary, self.page.height_full, fill=1, stroke=0)
+        canvas.rect(0, 0, column_boundary, self.page.page_height, fill=1, stroke=0)
         canvas.restoreState()
 
 
@@ -121,14 +120,8 @@ class Generator(pydantic.BaseModel):
 
     def _create_section_header(self, title: str) -> list[Any]:
         elements = []
-        elements.append(Paragraph(title, self.config.styles.section_header.create_style()))
-        line_width = (self.config.page.column_left_width - self.config.page.options.column_gap) - 0.15 * inch
-        line_drawing = Drawing(line_width, 3)
-        line = Line(0, 1, line_width, 1)
-        line.strokeColor = colors.black
-        line.strokeWidth = 1
-        line_drawing.add(line)
-        elements.append(line_drawing)
+        elements.append(Paragraph(title, self.config.styles.sidebar_title.create_style()))
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.black))
         elements.append(Spacer(1, 0.02 * inch))
         return elements
 
@@ -170,24 +163,24 @@ class Generator(pydantic.BaseModel):
         if candidate.gitlab:
             contact_info.append(format_contact_line("\U0001f310", "GitLab"))
         for info in contact_info:
-            elements.append(Paragraph(info, self.config.styles.normal.create_style()))
+            elements.append(Paragraph(info, self.config.styles.sidebar_text.create_style()))
         elements.append(Spacer(1, 0.05 * inch))
         return elements
 
     def _build_professional_summary_left(self, summary: str) -> list[Any]:
         elements = []
-        elements.append(Paragraph(summary, self.config.styles.normal.create_style()))
+        elements.append(Paragraph(summary, self.config.styles.sidebar_summary.create_style()))
         elements.append(Spacer(1, 0.05 * inch))
         return elements
 
     def _build_skills_section(self, skills: dict[str, list[str]]) -> list[Any]:
         elements = []
-        elements.extend(self._create_section_header("SKILLS"))
+        elements.extend(self._create_section_header("Skills"))
         skill_categories = list(skills.items())
         for i, (category, skill_list) in enumerate(skill_categories):
-            elements.append(Paragraph(f"<b>{category.upper()}</b>", self.config.styles.section_text.create_style()))
+            elements.append(Paragraph(f"{category.upper()}", self.config.styles.sidebar_title.create_style()))
             skills_text = " • ".join(skill_list)
-            elements.append(Paragraph(skills_text, self.config.styles.section_text.create_style()))
+            elements.append(Paragraph(skills_text, self.config.styles.sidebar_text.create_style()))
             if i < len(skill_categories) - 1:
                 elements.append(Spacer(1, 0.08 * inch))
             else:
@@ -197,37 +190,50 @@ class Generator(pydantic.BaseModel):
 
     def _build_education_section(self, education: list[EducationBlock]) -> list[Any]:
         elements = []
-        elements.extend(self._create_section_header("EDUCATION"))
+        elements.extend(self._create_section_header("Education"))
 
         for edu in education:
-            elements.append(Paragraph(f"<b>{edu.degree}</b>", self.config.styles.section_text.create_style()))
-            elements.append(Paragraph(f"{edu.field_of_study}", self.config.styles.section_text.create_style()))
-            elements.append(Paragraph(f"{edu.institution}", self.config.styles.section_text.create_style()))
+            elements.append(Paragraph(f"{edu.degree}", self.config.styles.sidebar_title.create_style()))
+            elements.append(Paragraph(f"{edu.field_of_study}", self.config.styles.sidebar_text.create_style()))
+            elements.append(Paragraph(f"{edu.institution}", self.config.styles.sidebar_text.create_style()))
             if edu.location:
-                elements.append(Paragraph(f"{edu.location}", self.config.styles.section_text.create_style()))
+                elements.append(Paragraph(f"{edu.location}", self.config.styles.sidebar_text.create_style()))
             end_date = edu.end_date.strftime("%Y") if edu.end_date else "Present"
             start_date = edu.start_date.strftime("%Y")
-            elements.append(Paragraph(f"{start_date} - {end_date}", self.config.styles.section_text.create_style()))
+            elements.append(Paragraph(f"{start_date} - {end_date}", self.config.styles.sidebar_text.create_style()))
             if edu.gpa:
-                elements.append(Paragraph(f"GPA: {edu.gpa:.2f}", self.config.styles.section_text.create_style()))
+                elements.append(Paragraph(f"GPA: {edu.gpa:.2f}", self.config.styles.sidebar_text.create_style()))
             elements.append(Spacer(1, 0.05 * inch))
         return elements
 
     def _build_certifications_section(self, certifications: list[CertificationBlock]) -> list[Any]:
         elements = []
-        elements.extend(self._create_section_header("CERTIFICATIONS"))
+        elements.extend(self._create_section_header("Certifications"))
+        data = []
 
         for cert in certifications:
-            elements.append(Paragraph(f"<b>{cert.title}</b>", self.config.styles.section_text.create_style()))
-            if cert.issue_date:
-                issue_date = cert.issue_date.strftime("%Y")
-                elements.append(Paragraph(f"{issue_date}", self.config.styles.section_text.create_style()))
-            elements.append(Spacer(1, 0.02 * inch))
+            left_style = self.config.styles.sidebar_text.create_style(alignment=TA_LEFT)
+            right_style = self.config.styles.sidebar_text.create_style(alignment=TA_RIGHT)
+            cert_data = [
+                Paragraph(" • " + cert.title, left_style),
+                Paragraph(cert.issue_date.strftime("%Y") if cert.issue_date else "", right_style),
+            ]
+            data.append(cert_data)
+        table = Table(data, colWidths=[None, 50])
+        table_style = TableStyle(
+            [
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),  # No left padding
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),  # No right padding
+            ]
+        )
+        table.setStyle(table_style)
+        elements.append(table)
+        elements.append(Spacer(1, 0.02 * inch))
         return elements
 
     def _build_experience_section(self, experience: list) -> list[Any]:
         elements = []
-        elements.extend(self._create_section_header("WORK EXPERIENCE"))
+        elements.extend(self._create_section_header("Professional Experience"))
         for exp in experience:
             elements.append(Paragraph(f"{exp.position}", self.config.styles.section_text.create_style()))
             end_date = exp.end_date.strftime("%b %Y") if exp.end_date else "Present"
@@ -243,7 +249,7 @@ class Generator(pydantic.BaseModel):
     def _build_custom_sections(self, custom_sections: dict[str, list]) -> list[Any]:
         elements = []
         for section_title, blocks in custom_sections.items():
-            elements.extend(self._create_section_header(section_title.upper()))
+            elements.extend(self._create_section_header(section_title))
             for block in blocks:
                 if hasattr(block, "title"):
                     elements.append(Paragraph(f"<b>{block.title}</b>", self.config.styles.section_title.create_style()))

@@ -16,6 +16,7 @@ from typing import Any, ClassVar
 
 import pydantic
 from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT
 from reportlab.platypus.frames import Frame
@@ -118,9 +119,9 @@ class Generator(pydantic.BaseModel):
             story.extend(self._build_custom_sections(self.config.resume.sections))
         doc.build(story)
 
-    def _create_section_header(self, title: str) -> list[Any]:
+    def _create_section_header(self, title: str, style: ParagraphStyle) -> list[Any]:
         elements = []
-        elements.append(Paragraph(title, self.config.styles.sidebar_title.create_style()))
+        elements.append(Paragraph(title, style))
         elements.append(HRFlowable(width="100%", thickness=1, color=colors.black))
         elements.append(Spacer(1, 0.02 * inch))
         return elements
@@ -139,7 +140,7 @@ class Generator(pydantic.BaseModel):
 
     def _build_contact_info(self, candidate: CandidateInfo) -> list[Any]:
         elements = []
-        elements.extend(self._create_section_header("CONTACT"))
+        elements.extend(self._create_section_header("Contact", self.config.styles.sidebar_title.create_style()))
 
         def format_contact_line(icon: str, text: str) -> str:
             try:
@@ -175,7 +176,7 @@ class Generator(pydantic.BaseModel):
 
     def _build_skills_section(self, skills: dict[str, list[str]]) -> list[Any]:
         elements = []
-        elements.extend(self._create_section_header("Skills"))
+        elements.extend(self._create_section_header("Skills", self.config.styles.sidebar_title.create_style()))
         skill_categories = list(skills.items())
         for i, (category, skill_list) in enumerate(skill_categories):
             elements.append(Paragraph(f"{category.upper()}", self.config.styles.sidebar_title.create_style()))
@@ -190,7 +191,7 @@ class Generator(pydantic.BaseModel):
 
     def _build_education_section(self, education: list[EducationBlock]) -> list[Any]:
         elements = []
-        elements.extend(self._create_section_header("Education"))
+        elements.extend(self._create_section_header("Education", self.config.styles.sidebar_title.create_style()))
 
         for edu in education:
             elements.append(Paragraph(f"{edu.degree}", self.config.styles.sidebar_title.create_style()))
@@ -208,7 +209,7 @@ class Generator(pydantic.BaseModel):
 
     def _build_certifications_section(self, certifications: list[CertificationBlock]) -> list[Any]:
         elements = []
-        elements.extend(self._create_section_header("Certifications"))
+        elements.extend(self._create_section_header("Certifications", self.config.styles.sidebar_title.create_style()))
         data = []
 
         for cert in certifications:
@@ -233,7 +234,7 @@ class Generator(pydantic.BaseModel):
 
     def _build_experience_section(self, experience: list) -> list[Any]:
         elements = []
-        elements.extend(self._create_section_header("Professional Experience"))
+        elements.extend(self._create_section_header("Professional Experience", self.config.styles.section_title.create_style()))
         for exp in experience:
             elements.append(Paragraph(f"{exp.position}", self.config.styles.section_text.create_style()))
             end_date = exp.end_date.strftime("%b %Y") if exp.end_date else "Present"
@@ -249,7 +250,7 @@ class Generator(pydantic.BaseModel):
     def _build_custom_sections(self, custom_sections: dict[str, list]) -> list[Any]:
         elements = []
         for section_title, blocks in custom_sections.items():
-            elements.extend(self._create_section_header(section_title))
+            elements.extend(self._create_section_header(section_title, self.config.styles.section_title.create_style()))
             for block in blocks:
                 if hasattr(block, "title"):
                     elements.append(Paragraph(f"<b>{block.title}</b>", self.config.styles.section_title.create_style()))

@@ -12,30 +12,27 @@ from __future__ import annotations
 
 import uuid
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import ClassVar
 
 import pydantic
-from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
+from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate, FrameBreak
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT
 from reportlab.platypus.frames import Frame
 from reportlab.lib.units import inch
-from reportlab.platypus import Paragraph, Spacer, HRFlowable, Table, TableStyle
+from reportlab.platypus import Paragraph, Spacer, HRFlowable, Table, Flowable
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 from neatresume.config import Config, Page
-from neatresume.resume import CandidateInfo, EducationBlock, CertificationBlock
-from neatresume.styles import StyleFont
+from neatresume.styles import StyleFont, Symbol
 
 
 class TemplateID:
-    FRAME_FOOTER: ClassVar[str] = uuid.uuid4().hex
-    FRAME_LEFT: ClassVar[str] = uuid.uuid4().hex
-    FRAME_RIGHT: ClassVar[str] = uuid.uuid4().hex
-    FRAME_SIDE: ClassVar[str] = uuid.uuid4().hex
+    FRAME_MAIN: ClassVar[str] = uuid.uuid4().hex
+    FRAME_SIDEBAR: ClassVar[str] = uuid.uuid4().hex
     TEMPLATE_MULTI_COLUMN: ClassVar[str] = uuid.uuid4().hex
 
 
@@ -62,9 +59,9 @@ class PageTemplateFactory(pydantic.BaseModel):
         left_frame = Frame(
             x1=self.page.margins.left,
             y1=self.page.margins.bottom,
-            width=self.page.sidebar_width - self.page.options.column_gap,  # Small gap between columns
+            width=self.page.sidebar_width - self.page.options.column_gap,
             height=self.page.content_height,
-            id=TemplateID.FRAME_LEFT,
+            id=TemplateID.FRAME_SIDEBAR,
             showBoundary=0,
         )
         right_frame = Frame(
@@ -72,7 +69,7 @@ class PageTemplateFactory(pydantic.BaseModel):
             y1=self.page.margins.bottom,
             width=self.page.main_width - self.page.options.column_gap,
             height=self.page.content_height,
-            id=TemplateID.FRAME_RIGHT,
+            id=TemplateID.FRAME_MAIN,
             showBoundary=0,
         )
         frames.append(left_frame)
@@ -83,8 +80,10 @@ class PageTemplateFactory(pydantic.BaseModel):
         _ = doc
         column_boundary = self.page.margins.left + self.page.sidebar_width
         canvas.saveState()
-        canvas.setFillColor(self.page.colors.accent.hex_color)
+        canvas.setFillColor(self.page.colors.frame_left.hex_color)
         canvas.rect(0, 0, column_boundary, self.page.page_height, fill=1, stroke=0)
+        canvas.setFillColor(self.page.colors.frame_right.hex_color)
+        canvas.rect(column_boundary, 0, self.page.main_width, self.page.page_height, fill=1, stroke=0)
         canvas.restoreState()
 
 
@@ -102,162 +101,166 @@ class Generator(pydantic.BaseModel):
         pdfmetrics.registerFont(TTFont(StyleFont.SYMBOLA.font_name, "/usr/share/fonts/truetype/ancient-scripts/Symbola_hint.ttf"))
 
     def generate(self) -> None:
-        doc = self._document
-        doc.addPageTemplates([self._template_multi_column])
-        story: list = []
-        story.extend(self._build_candidate_header(self.config.resume.candidate))
-        story.append(Spacer(1, 0.1 * inch))
-        story.extend(self._build_professional_summary_left(self.config.resume.summary))
-        story.extend(self._build_contact_info(self.config.resume.candidate))
-        story.extend(self._build_skills_section(self.config.resume.skills))
-        story.extend(self._build_education_section(self.config.resume.education))
-        if self.config.resume.certifications:
-            story.extend(self._build_certifications_section(self.config.resume.certifications))
-        story.extend(self._frame_break())
-        story.extend(self._build_experience_section(self.config.resume.experience))
-        if self.config.resume.sections:
-            story.extend(self._build_custom_sections(self.config.resume.sections))
-        doc.build(story)
+        document = self._document
+        document.addPageTemplates([self._template_multi_column])
+        flowables: list[Flowable] = []
+        flowables.extend(self._build_candidate_header())
+        flowables.extend(self._build_professional_summary())
+        flowables.extend(self._build_contact_info())
+        if len(self.config.resume.education) > 0:
+            flowables.extend(self._build_education_section())
+        if len(self.config.resume.recognitions) > 0:
+            flowables.extend(self._build_recognitions_section())
+        if len(self.config.resume.skills) > 0:
+            flowables.extend(self._build_skills_section())
+        flowables.append(FrameBreak())
+        if len(self.config.resume.experience) > 0:
+            flowables.extend(self._build_experience_section())
+        if len(self.config.resume.sections) > 0:
+            flowables.extend(self._build_custom_sections())
+        document.build(flowables)
 
-    def _create_section_header(self, title: str, style: ParagraphStyle) -> list[Any]:
-        elements = []
+    def _add_header(self, title: str, style: ParagraphStyle) -> list[Flowable]:
+        elements: list[Flowable] = []
         elements.append(Paragraph(title, style))
         elements.append(HRFlowable(width="100%", thickness=1, color=colors.black))
-        elements.append(Spacer(1, 0.02 * inch))
         return elements
 
-    def _frame_break(self) -> list[Any]:
-        """Create a frame break to move to the next column."""
-        from reportlab.platypus.doctemplate import FrameBreak
-
-        return [FrameBreak()]
-
-    def _build_candidate_header(self, candidate: CandidateInfo) -> list[Any]:
-        elements = []
-        elements.append(Paragraph(candidate.name, self.config.styles.candidate_name.create_style()))
-        elements.append(Paragraph(candidate.title, self.config.styles.candidate_title.create_style()))
+    def _build_candidate_header(self) -> list[Flowable]:
+        elements: list[Flowable] = []
+        elements.append(Paragraph(self.config.resume.candidate.name, self.config.styles.candidate_name.get_style()))
+        elements.append(Paragraph(self.config.resume.candidate.title, self.config.styles.candidate_title.get_style()))
         return elements
 
-    def _build_contact_info(self, candidate: CandidateInfo) -> list[Any]:
-        elements = []
-        elements.extend(self._create_section_header("Contact", self.config.styles.sidebar_title.create_style()))
-
-        def format_contact_line(icon: str, text: str) -> str:
-            try:
-                pdfmetrics.getFont("Symbola")
-                return f'<font name="Symbola">{icon}</font> {text}'
-            except Exception:
-                return f"{icon} {text}"
-
-        contact_info = [
-            format_contact_line("\U0001f4de", candidate.phone_regional),
-            format_contact_line("\U0001f582", candidate.email),
-        ]
-        if candidate.address:
-            contact_info.append(format_contact_line("\U0001f4cd", candidate.address))
-        if candidate.website:
-            contact_info.append(format_contact_line("\U0001f310", candidate.website))
-        if candidate.linkedin:
-            contact_info.append(format_contact_line("\U0001f310", "LinkedIn"))
-        if candidate.github:
-            contact_info.append(format_contact_line("\U0001f310", "GitHub"))
-        if candidate.gitlab:
-            contact_info.append(format_contact_line("\U0001f310", "GitLab"))
-        for info in contact_info:
-            elements.append(Paragraph(info, self.config.styles.sidebar_text.create_style()))
-        elements.append(Spacer(1, 0.05 * inch))
-        return elements
-
-    def _build_professional_summary_left(self, summary: str) -> list[Any]:
-        elements = []
-        elements.append(Paragraph(summary, self.config.styles.sidebar_summary.create_style()))
-        elements.append(Spacer(1, 0.05 * inch))
-        return elements
-
-    def _build_skills_section(self, skills: dict[str, list[str]]) -> list[Any]:
-        elements = []
-        elements.extend(self._create_section_header("Skills", self.config.styles.sidebar_title.create_style()))
-        skill_categories = list(skills.items())
-        for i, (category, skill_list) in enumerate(skill_categories):
-            elements.append(Paragraph(f"{category.upper()}", self.config.styles.sidebar_title.create_style()))
-            skills_text = " • ".join(skill_list)
-            elements.append(Paragraph(skills_text, self.config.styles.sidebar_text.create_style()))
-            if i < len(skill_categories) - 1:
-                elements.append(Spacer(1, 0.08 * inch))
-            else:
-                elements.append(Spacer(1, 0.02 * inch))
-        elements.append(Spacer(1, 0.05 * inch))
-        return elements
-
-    def _build_education_section(self, education: list[EducationBlock]) -> list[Any]:
-        elements = []
-        elements.extend(self._create_section_header("Education", self.config.styles.sidebar_title.create_style()))
-
-        for edu in education:
-            elements.append(Paragraph(f"{edu.degree}", self.config.styles.sidebar_title.create_style()))
-            elements.append(Paragraph(f"{edu.field_of_study}", self.config.styles.sidebar_text.create_style()))
-            elements.append(Paragraph(f"{edu.institution}", self.config.styles.sidebar_text.create_style()))
-            if edu.location:
-                elements.append(Paragraph(f"{edu.location}", self.config.styles.sidebar_text.create_style()))
-            end_date = edu.end_date.strftime("%Y") if edu.end_date else "Present"
-            start_date = edu.start_date.strftime("%Y")
-            elements.append(Paragraph(f"{start_date} - {end_date}", self.config.styles.sidebar_text.create_style()))
-            if edu.gpa:
-                elements.append(Paragraph(f"GPA: {edu.gpa:.2f}", self.config.styles.sidebar_text.create_style()))
-            elements.append(Spacer(1, 0.05 * inch))
-        return elements
-
-    def _build_certifications_section(self, certifications: list[CertificationBlock]) -> list[Any]:
-        elements = []
-        elements.extend(self._create_section_header("Certifications", self.config.styles.sidebar_title.create_style()))
-        data = []
-
-        for cert in certifications:
-            left_style = self.config.styles.sidebar_text.create_style(alignment=TA_LEFT)
-            right_style = self.config.styles.sidebar_text.create_style(alignment=TA_RIGHT)
-            cert_data = [
-                Paragraph(" • " + cert.title, left_style),
-                Paragraph(cert.issue_date.strftime("%Y") if cert.issue_date else "", right_style),
-            ]
-            data.append(cert_data)
-        table = Table(data, colWidths=[None, 50])
-        table_style = TableStyle(
-            [
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),  # No left padding
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),  # No right padding
-            ]
+    def _build_contact_info(self) -> list[Flowable]:
+        elements: list[Flowable] = []
+        elements.extend(self._add_header(self.config.resume.section_names.contact, self.config.styles.sidebar_title.get_style()))
+        contact_info: list[str] = []
+        contact_info.append(self._format_contact_line(Symbol.PHONE, self.config.resume.candidate.phone_regional))
+        contact_info.append(
+            self._format_contact_line(
+                Symbol.EMAIL, f'<link href="mailto:{self.config.resume.candidate.email}">{self.config.resume.candidate.email}</link>'
+            )
         )
-        table.setStyle(table_style)
-        elements.append(table)
-        elements.append(Spacer(1, 0.02 * inch))
+        if self.config.resume.candidate.address:
+            contact_info.append(self._format_contact_line(Symbol.ADDRESS, self.config.resume.candidate.address))
+        if self.config.resume.candidate.website:
+            contact_info.append(
+                self._format_contact_line(Symbol.WEBSITE, f'<link href="{self.config.resume.candidate.website}">Website</link>')
+            )
+        if self.config.resume.candidate.linkedin:
+            contact_info.append(
+                self._format_contact_line(Symbol.LINKEDIN, f'<link href="{self.config.resume.candidate.linkedin}">LinkedIn</link>')
+            )
+        if self.config.resume.candidate.github:
+            contact_info.append(
+                self._format_contact_line(Symbol.GITHUB, f'<link href="{self.config.resume.candidate.github}">GitHub</link>')
+            )
+        if self.config.resume.candidate.gitlab:
+            contact_info.append(
+                self._format_contact_line(Symbol.GITLAB, f'<link href="{self.config.resume.candidate.gitlab}">GitLab</link>')
+            )
+        for info in contact_info:
+            elements.append(Paragraph(info, self.config.styles.sidebar_text.get_style()))
         return elements
 
-    def _build_experience_section(self, experience: list) -> list[Any]:
-        elements = []
-        elements.extend(self._create_section_header("Professional Experience", self.config.styles.section_title.create_style()))
-        for exp in experience:
-            elements.append(Paragraph(f"{exp.position}", self.config.styles.section_text.create_style()))
-            end_date = exp.end_date.strftime("%b %Y") if exp.end_date else "Present"
-            start_date = exp.start_date.strftime("%b %Y")
-            company_info = f"{exp.company} | {start_date} - {end_date}"
-            elements.append(Paragraph(company_info, self.config.styles.section_text.create_style()))
-            if exp.summary:
-                for point in exp.summary:
-                    elements.append(Paragraph(f"• {point}", self.config.styles.section_text.create_style()))
+    def _build_professional_summary(self) -> list[Flowable]:
+        elements: list[Flowable] = []
+        elements.append(Paragraph(self.config.resume.summary, self.config.styles.sidebar_summary.get_style()))
+        return elements
+
+    def _build_skills_section(self) -> list[Flowable]:
+        elements: list[Flowable] = []
+        elements.extend(self._add_header(self.config.resume.section_names.skills, self.config.styles.sidebar_title.get_style()))
+        for category, skill_list in self.config.resume.skills.items():
+            elements.append(Paragraph(f"{category.upper()}", self.config.styles.sidebar_subtitle.get_style()))
+            skills_text = " • ".join(skill_list)
+            elements.append(Paragraph(skills_text, self.config.styles.sidebar_text.get_style()))
+        return elements
+
+    def _build_education_section(self) -> list[Flowable]:
+        elements: list[Flowable] = []
+        elements.extend(self._add_header(self.config.resume.section_names.education, self.config.styles.sidebar_title.get_style()))
+        for edu in self.config.resume.education:
+            elements.append(Paragraph(f"{edu.degree}", self.config.styles.sidebar_subtitle.get_style()))
+            elements.append(Paragraph(f"{edu.institution}", self.config.styles.sidebar_text.get_style()))
+            if edu.location:
+                elements.append(Paragraph(f"{edu.location}", self.config.styles.sidebar_text.get_style()))
+            start_date = edu.start_date.strftime("%b %Y")
+            end_date = edu.end_date.strftime("%b %Y") if edu.end_date else "Present"
+            elements.append(Paragraph(f"{start_date} - {end_date}", self.config.styles.sidebar_text.get_style()))
+            if edu.gpa:
+                elements.append(Paragraph(f"GPA: {edu.gpa:.2f}", self.config.styles.sidebar_text.get_style()))
             elements.append(Spacer(1, 0.05 * inch))
         return elements
 
-    def _build_custom_sections(self, custom_sections: dict[str, list]) -> list[Any]:
-        elements = []
-        for section_title, blocks in custom_sections.items():
-            elements.extend(self._create_section_header(section_title, self.config.styles.section_title.create_style()))
+    def _build_recognitions_section(self) -> list[Flowable]:
+        elements: list[Flowable] = []
+        elements.extend(self._add_header(self.config.resume.section_names.recognitions, self.config.styles.sidebar_title.get_style()))
+        data = []
+        for recognition in self.config.resume.recognitions:
+            left_style = self.config.styles.sidebar_text.get_style(alignment=TA_LEFT)
+            right_style = self.config.styles.sidebar_text.get_style(alignment=TA_RIGHT)
+            recognition_data = [
+                Paragraph(" • " + recognition.name, left_style),
+                Paragraph(recognition.issue_date.strftime("%Y") if recognition.issue_date else "", right_style),
+            ]
+            data.append(recognition_data)
+        table = Table(data, colWidths=[None, self.config.styles.recognition_table.date_width])
+        table.setStyle(self.config.styles.recognition_table.get_style())
+        elements.append(table)
+        return elements
+
+    def _build_experience_section(self) -> list[Flowable]:
+        elements: list[Flowable] = []
+        elements.extend(self._add_header("Professional Experience", self.config.styles.section_title.get_style()))
+        table_style = self.config.styles.experience_table.get_style()
+        for exp in self.config.resume.experience:
+            company_and_location_data = [
+                [
+                    Paragraph(f"{exp.company}", self.config.styles.section_title.get_style(alignment=TA_LEFT)),
+                    Paragraph(f"{exp.location}", self.config.styles.section_subsubtitle.get_style(alignment=TA_RIGHT))
+                    if exp.location
+                    else Paragraph(""),
+                ]
+            ]
+            company_and_location = Table(company_and_location_data, colWidths=[None, self.config.styles.experience_table.location_width])
+            company_and_location.setStyle(table_style)
+            elements.append(company_and_location)
+            title_and_dates_data = [
+                [
+                    Paragraph(exp.position, self.config.styles.section_subtitle.get_style(alignment=TA_LEFT)),
+                    Paragraph(
+                        f"{exp.start_date.strftime('%b %Y')} - {exp.end_date.strftime('%b %Y') if exp.end_date else 'Present'}",
+                        self.config.styles.section_subsubtitle.get_style(alignment=TA_RIGHT),
+                    ),
+                ]
+            ]
+            title_and_dates = Table(title_and_dates_data, colWidths=[None, self.config.styles.experience_table.date_width])
+            title_and_dates.setStyle(table_style)
+            elements.append(title_and_dates)
+            for point in exp.summary:
+                elements.append(Paragraph(f"• {point}", self.config.styles.section_text.get_style()))
+        return elements
+
+    def _build_custom_sections(self) -> list[Flowable]:
+        elements: list[Flowable] = []
+        for section_title, blocks in self.config.resume.sections.items():
+            elements.extend(self._add_header(section_title, self.config.styles.section_title.get_style()))
             for block in blocks:
                 if hasattr(block, "title"):
-                    elements.append(Paragraph(f"<b>{block.title}</b>", self.config.styles.section_title.create_style()))
+                    elements.append(Paragraph(f"<b>{block.title}</b>", self.config.styles.section_title.get_style()))
                 if hasattr(block, "subtitle") and block.subtitle:
-                    elements.append(Paragraph(block.subtitle, self.config.styles.section_subtitle.create_style()))
+                    elements.append(Paragraph(block.subtitle, self.config.styles.section_subtitle.get_style()))
                 if hasattr(block, "summary") and block.summary:
                     for point in block.summary:
-                        elements.append(Paragraph(f"• {point}", self.config.styles.section_text.create_style()))
+                        elements.append(Paragraph(f"• {point}", self.config.styles.section_text.get_style()))
                 elements.append(Spacer(1, 0.05 * inch))
         return elements
+
+    def _format_contact_line(self, icon: Symbol, text: str) -> str:
+        try:
+            pdfmetrics.getFont(StyleFont.SYMBOLA.font_name)
+            return f'<font name="{StyleFont.SYMBOLA.font_name}">{icon.value}</font> {text}'
+        except Exception:
+            return f"{icon.value} {text}"

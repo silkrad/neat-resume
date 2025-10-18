@@ -9,7 +9,7 @@ from neatresume.generator import Generator
 
 
 def main():
-    resume_config = _load_config(Path("tests/examples/alex_chen_resume.json"))
+    resume_config = _load_config(Path("tests/examples/sarah_johnson_resume.json"))
     Generator(config=resume_config).generate()
 
 

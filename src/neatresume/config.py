@@ -41,9 +41,8 @@ class PageSize(enum.StrEnum):
 
 
 class Colors(pydantic.BaseModel):
-    primary: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#003366"), validate_default=True, frozen=True)
-    secondary: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#666666"), validate_default=True, frozen=True)
-    accent: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#e1e8f0"), validate_default=True, frozen=True)
+    frame_left: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#e1e8f0"), validate_default=True, frozen=True)
+    frame_right: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#ffffff"), validate_default=True, frozen=True)
 
 
 class Margins(pydantic.BaseModel):
@@ -58,7 +57,7 @@ class Options(pydantic.BaseModel):
     indent_spacing: float = pydantic.Field(default=0.15 * inch, validate_default=True, frozen=True)
     item_spacing: float = pydantic.Field(default=0.1 * inch, validate_default=True, frozen=True)
     section_spacing: float = pydantic.Field(default=0.3 * inch, validate_default=True, frozen=True)
-    sidebar_size: float = pydantic.Field(default=0.34, validate_default=True, frozen=True)
+    sidebar_size: float = pydantic.Field(default=0.35, validate_default=True, frozen=True)
 
 
 class Page(pydantic.BaseModel):

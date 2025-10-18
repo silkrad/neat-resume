@@ -104,21 +104,31 @@ class Generator(pydantic.BaseModel):
         document = self._document
         document.addPageTemplates([self._template_multi_column])
         flowables: list[Flowable] = []
-        flowables.extend(self._build_candidate_header())
-        flowables.extend(self._build_professional_summary())
-        flowables.extend(self._build_contact_info())
-        if len(self.config.resume.education) > 0:
-            flowables.extend(self._build_education_section())
-        if len(self.config.resume.recognitions) > 0:
-            flowables.extend(self._build_recognitions_section())
-        if len(self.config.resume.skills) > 0:
-            flowables.extend(self._build_skills_section())
-        flowables.append(FrameBreak())
-        if len(self.config.resume.experience) > 0:
-            flowables.extend(self._build_experience_section())
-        if len(self.config.resume.sections) > 0:
-            flowables.extend(self._build_custom_sections())
+        flowables.extend(self._generate_frame_left())
+        flowables.extend([FrameBreak()])
+        flowables.extend(self._generate_frame_main())
         document.build(flowables)
+
+    def _generate_frame_left(self) -> list[Flowable]:
+        elements: list[Flowable] = []
+        elements.extend(self._build_candidate_header())
+        elements.extend(self._build_professional_summary())
+        elements.extend(self._build_contact_info())
+        if len(self.config.resume.education) > 0:
+            elements.extend(self._build_education_section())
+        if len(self.config.resume.recognitions) > 0:
+            elements.extend(self._build_recognitions_section())
+        if len(self.config.resume.skills) > 0:
+            elements.extend(self._build_skills_section())
+        return elements
+
+    def _generate_frame_main(self) -> list[Flowable]:
+        elements: list[Flowable] = []
+        if len(self.config.resume.experience) > 0:
+            elements.extend(self._build_experience_section())
+        if len(self.config.resume.sections) > 0:
+            elements.extend(self._build_custom_sections())
+        return elements
 
     def _add_header(self, title: str, style: ParagraphStyle) -> list[Flowable]:
         elements: list[Flowable] = []

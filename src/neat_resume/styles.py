@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import enum
 from uuid import uuid4
+from typing import Literal
 
 import pydantic
 from reportlab.lib.styles import ParagraphStyle
@@ -13,6 +14,8 @@ from reportlab.platypus import TableStyle
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT
 from reportlab.lib.units import inch
+
+type Alignment = Literal[0, 1, 2, 4] | Literal["left", "center", "centre", "right", "justify"]
 
 
 class StyleFont(enum.StrEnum):
@@ -57,7 +60,7 @@ class Color(pydantic.BaseModel):
 
 
 class BaseStyleFactory(pydantic.BaseModel):
-    alignment: int = pydantic.Field(default=TA_LEFT, ge=0, validate_default=True, frozen=True)
+    alignment: Alignment = pydantic.Field(default=TA_LEFT, ge=0, validate_default=True, frozen=True)
     fontName: str = pydantic.Field(default=StyleFont.HELVETICA.font_name, validate_default=True, frozen=True)
     fontSize: float = pydantic.Field(default=9, ge=0, validate_default=True, frozen=True)
     leading: float = pydantic.Field(default=11, ge=0, validate_default=True, frozen=True)
@@ -67,7 +70,11 @@ class BaseStyleFactory(pydantic.BaseModel):
     spaceBefore: float = pydantic.Field(default=0, ge=0, validate_default=True, frozen=True)
     textColor: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#000000"), validate_default=True, frozen=True)
 
-    def get_style(self, alignment: int | None = None, textColor: Color | None = None) -> ParagraphStyle:
+    def get_style(
+        self,
+        alignment: Alignment | None = None,
+        textColor: Color | None = None,
+    ) -> ParagraphStyle:
         return ParagraphStyle(
             name=uuid4().hex,
             alignment=alignment if alignment else self.alignment,
@@ -120,7 +127,7 @@ class SectionSubSubTitleStyleFactory(BaseStyleFactory):
 
 
 class SectionTextStyleFactory(BaseStyleFactory):
-    alignment: int = pydantic.Field(default=TA_LEFT, validate_default=True, frozen=True)
+    alignment: Alignment = pydantic.Field(default=TA_LEFT, validate_default=True, frozen=True)
     fontSize: float = pydantic.Field(default=9, validate_default=True, frozen=True)
     leftIndent: float = pydantic.Field(default=0.1 * inch, validate_default=True, frozen=True)
     spaceAfter: float = pydantic.Field(default=2, validate_default=True, frozen=True)

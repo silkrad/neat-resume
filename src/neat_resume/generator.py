@@ -26,8 +26,8 @@ from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
-from neatresume.config import Config, Page
-from neatresume.styles import StyleFont, Symbol
+from neat_resume.config import Config, Page
+from neat_resume.styles import StyleFont, Symbol
 
 
 class TemplateID:

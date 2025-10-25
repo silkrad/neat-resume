@@ -12,8 +12,8 @@ import pydantic
 from reportlab.lib import pagesizes
 from reportlab.lib.units import inch
 
-from neatresume.resume import Resume
-from neatresume.styles import Styles, Color
+from neat_resume.resume import Resume
+from neat_resume.styles import Styles, Color
 
 
 class PageSize(enum.StrEnum):
@@ -94,14 +94,14 @@ class Page(pydantic.BaseModel):
 class Config(pydantic.BaseModel):
     resume: Resume = pydantic.Field(frozen=True)
 
-    file: Path | None = pydantic.Field(default=None, validate_default=True)
+    file: Path = pydantic.Field(default_factory=Path, validate_default=True)
     page: Page = pydantic.Field(default_factory=Page, validate_default=True, frozen=True)
     styles: Styles = pydantic.Field(default_factory=Styles, validate_default=True, frozen=True)
 
     @pydantic.model_validator(mode="after")
     def generate_filename(self) -> Config:
         """Generate filename if not provided, based on candidate name and current date."""
-        if not self.file:
+        if self.file == Path():
             candidate_name = self.resume.candidate.name.lower().replace(" ", "_")
             current_date = date.today().strftime("%Y-%m-%d")
             self.file = Path(f"{candidate_name}_resume_{current_date}.pdf")

@@ -4,8 +4,8 @@
 
 from pathlib import Path
 
-from neatresume.config import Config
-from neatresume.generator import Generator
+from neat_resume.config import Config
+from neat_resume.generator import Generator
 
 
 def main():

@@ -1,13 +1,17 @@
+# SPDX-FileCopyrightText: 2025-present Ricardo Rivera <silkrad@ririlabs.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "neatresume"
+name = "neat_resume"
 dynamic = ["version"]
 description = ''
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 license = "Apache-2.0"
 keywords = []
 authors = [
@@ -15,25 +19,30 @@ authors = [
 ]
 classifiers = [
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
+  "phonenumbers",
+  "pycountry",
+  "pydantic",
+  "pydantic[email]",
+  "pydantic-extra-types",
+  "pydantic-yaml",
   "reportlab",
 ]
 
+[project.scripts]
+neat-resume = "neat_resume.__main__:main"
+
 [project.urls]
-Documentation = "https://github.com/silkrad/neatresume#readme"
-Issues = "https://github.com/silkrad/neatresume/issues"
-Source = "https://github.com/silkrad/neatresume"
+Documentation = "https://github.com/silkrad/neat_resume#readme"
+Issues = "https://github.com/silkrad/neat_resume/issues"
+Source = "https://github.com/silkrad/neat_resume"
 
 [tool.hatch.version]
-path = "src/neatresume/__about__.py"
+path = "src/neat_resume/__about__.py"
 
 [tool.hatch.envs.hatch-static-analysis]
 config-path = "none"
@@ -45,19 +54,19 @@ extra-dependencies = [
 ]
 
 [tool.hatch.envs.types.scripts]
-check = "mypy --install-types --non-interactive {args:src/neatresume tests}"
+check = "mypy --install-types --non-interactive {args:src/neat_resume tests}"
 
 [tool.coverage.run]
-source_pkgs = ["neatresume", "tests"]
+source_pkgs = ["neat_resume", "tests"]
 branch = true
 parallel = true
 omit = [
-  "src/neatresume/__about__.py",
+  "src/neat_resume/__about__.py",
 ]
 
 [tool.coverage.paths]
-neatresume = ["src/neatresume", "*/neatresume-tmp/src/neatresume"]
-tests = ["tests", "*/neatresume-tmp/tests"]
+neat_resume = ["src/neat_resume", "*/neat_resume-tmp/src/neat_resume"]
+tests = ["tests", "*/neat_resume/tests"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -65,3 +74,6 @@ exclude_lines = [
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
 ]
+
+[tool.ruff]
+line-length = 140

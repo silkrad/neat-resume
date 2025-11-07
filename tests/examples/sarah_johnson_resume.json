@@ -1,0 +1,136 @@
+{
+  "resume": {
+    "candidate": {
+      "name": "Sarah Johnson",
+      "title": "Senior Software Engineer",
+      "email": "sarah.johnson@email.com",
+      "phone": "+1-415-555-0198",
+      "address": "San Francisco, CA",
+      "linkedin": "https://linkedin.com/in/sarahjohnson",
+      "github": "https://github.com/sarahj-dev"
+    },
+    "summary": "Experienced Senior Software Engineer with 8+ years of expertise in full-stack development, cloud architecture, and team leadership. Proven track record of delivering scalable solutions using Python, JavaScript, and modern frameworks. Passionate about mentoring junior developers and driving technical innovation in agile environments.",
+    "skills": {
+      "Programming Languages": ["Python", "JavaScript", "TypeScript", "Java", "Go"],
+      "Frontend Technologies": ["React", "Vue.js", "Angular", "HTML5", "CSS3", "Sass"],
+      "Backend Technologies": ["Django", "Flask", "Node.js", "Express", "FastAPI"],
+      "Databases": ["PostgreSQL", "MongoDB", "Redis", "MySQL"],
+      "Cloud & DevOps": ["AWS", "Docker", "Kubernetes", "CI/CD", "Terraform"],
+      "Tools & Methodologies": ["Git", "Agile", "Scrum", "TDD", "Code Review"]
+    },
+    "experience": [
+      {
+        "position": "Senior Software Engineer",
+        "company": "TechCorp Inc.",
+        "location": "San Francisco, CA",
+        "start_date": "2022-03-01",
+        "end_date": null,
+        "summary": [
+          "Led a team of 5 engineers in developing a microservices architecture that improved system scalability by 300%",
+          "Architected and implemented a real-time analytics platform serving 10M+ daily active users",
+          "Mentored 3 junior developers, resulting in 100% retention and 2 promotions within the team",
+          "Reduced deployment time from 2 hours to 15 minutes by implementing automated CI/CD pipelines",
+          "Collaborated with product managers and designers to deliver 12 major features ahead of schedule"
+        ]
+      },
+      {
+        "position": "Software Engineer",
+        "company": "StartupXYZ",
+        "location": "Palo Alto, CA",
+        "start_date": "2019-06-15",
+        "end_date": "2022-02-28",
+        "summary": [
+          "Developed and maintained full-stack web applications using React, Node.js, and PostgreSQL",
+          "Implemented automated testing suite that increased code coverage from 45% to 95%",
+          "Built RESTful APIs serving 500K+ requests per day with 99.9% uptime",
+          "Optimized database queries resulting in 40% improvement in application response times",
+          "Participated in code reviews and established coding standards for the engineering team"
+        ]
+      },
+      {
+        "position": "Junior Software Developer",
+        "company": "Digital Solutions LLC",
+        "location": "Oakland, CA",
+        "start_date": "2016-08-01",
+        "end_date": "2019-05-30",
+        "summary": [
+          "Contributed to development of e-commerce platform handling $2M+ in monthly transactions",
+          "Fixed critical bugs and implemented new features using PHP, MySQL, and JavaScript",
+          "Collaborated with QA team to ensure high-quality software delivery",
+          "Participated in daily standups and sprint planning in an Agile environment"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "Bachelor of Science in Computer Engineering",
+        "institution": "University of California, Berkeley",
+        "location": "Berkeley, CA",
+        "start_date": "2012-08-25",
+        "end_date": "2016-05-15",
+        "gpa": 3.7,
+        "summary": [
+          "Graduated Magna Cum Laude with concentration in Software Engineering",
+          "Relevant coursework: Data Structures, Algorithms, Database Systems, Software Engineering",
+          "Senior Capstone: Built a machine learning recommendation system for course selection"
+        ]
+      }
+    ],
+    "recognitions": [
+      {
+        "name": "AWS Certified Solutions Architect",
+        "issue_date": "2023-09-15"
+      },
+      {
+        "name": "Certified Kubernetes Administrator",
+        "issue_date": "2023-03-20"
+      },
+      {
+        "name": "Scrum Master Certification",
+        "issue_date": "2022-11-10"
+      }
+    ],
+    "sections": {
+      "Open Source Contributions": [
+        {
+          "title": "ReactFlow",
+          "subtitle": "Core Contributor",
+          "start_date": "2021-01-01",
+          "end_date": null,
+          "summary": [
+            "Contributed 50+ PRs to popular React library with 15K+ GitHub stars",
+            "Implemented new node types and improved performance by 25%",
+            "Maintained documentation and provided community support"
+          ]
+        }
+      ],
+      "Speaking & Publications": [
+        {
+          "title": "Modern Web Architecture Patterns",
+          "subtitle": "Tech Conference 2023 Keynote Speaker",
+          "start_date": "2023-10-05",
+          "summary": [
+            "Delivered keynote presentation to 500+ software engineers",
+            "Discussed microservices, serverless, and cloud-native architectures"
+          ]
+        },
+        {
+          "title": "Building Scalable React Applications",
+          "subtitle": "Published Article - Developer Magazine",
+          "start_date": "2023-07-15",
+          "summary": [
+            "Technical article published in leading software development magazine",
+            "Covered best practices for large-scale React application development"
+          ]
+        }
+      ]
+    },
+    "section_names": {
+      "contact": "Contact Information",
+      "skills": "Skills", 
+      "experience": "Professional Experience",
+      "education": "Education",
+      "recognitions": "Certifications and Awards"
+    }
+  }
+}

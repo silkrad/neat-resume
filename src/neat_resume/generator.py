@@ -223,7 +223,7 @@ class Generator(pydantic.BaseModel):
 
     def _build_experience_section(self) -> list[Flowable]:
         elements: list[Flowable] = []
-        elements.extend(self._add_header("Professional Experience", self.config.styles.section_title.get_style()))
+        elements.extend(self._add_header("Professional Experience", self.config.styles.section_header.get_style()))
         table_style = self.config.styles.experience_table.get_style()
         for exp in self.config.resume.experience:
             company_and_location_data = [
@@ -256,7 +256,7 @@ class Generator(pydantic.BaseModel):
     def _build_custom_sections(self) -> list[Flowable]:
         elements: list[Flowable] = []
         for section_title, blocks in self.config.resume.sections.items():
-            elements.extend(self._add_header(section_title, self.config.styles.section_title.get_style()))
+            elements.extend(self._add_header(section_title, self.config.styles.section_header.get_style()))
             for block in blocks:
                 if hasattr(block, "title"):
                     elements.append(Paragraph(f"<b>{block.title}</b>", self.config.styles.section_title.get_style()))

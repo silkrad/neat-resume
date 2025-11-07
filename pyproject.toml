@@ -34,7 +34,7 @@ dependencies = [
 ]
 
 [project.scripts]
-neat_resume = "neat_resume.__main__:main"
+neat-resume = "neat_resume.__main__:main"
 
 [project.urls]
 Documentation = "https://github.com/silkrad/neat_resume#readme"

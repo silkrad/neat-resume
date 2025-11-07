@@ -3,13 +3,35 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
+import argparse
 
 from neat_resume.config import Config
 from neat_resume.generator import Generator
 
 
-def main():
-    resume_config = _load_config(Path("tests/examples/sarah_johnson_resume.json"))
+def main(argv: list[str] | None = None) -> None:
+    """CLI entrypoint.
+
+    Accepts a --config / -c argument pointing to a JSON file describing the resume.
+    If not provided, falls back to the example in tests/examples.
+    """
+    argv = list(argv) if argv is not None else None
+    parser = argparse.ArgumentParser(description="Generate a resume from a JSON config file")
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=Path,
+        help="Path to resume config JSON file",
+        required=True,
+    )
+
+    args = parser.parse_args(argv)
+
+    config_path: Path = args.config
+    if not config_path.exists():
+        parser.error(f"config file not found: {config_path}")
+
+    resume_config = _load_config(config_path)
     Generator(config=resume_config).generate()
 
 

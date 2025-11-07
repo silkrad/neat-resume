@@ -63,12 +63,13 @@ class BaseStyleFactory(pydantic.BaseModel):
     alignment: Alignment = pydantic.Field(default=TA_LEFT, ge=0, validate_default=True, frozen=True)
     fontName: str = pydantic.Field(default=StyleFont.HELVETICA.font_name, validate_default=True, frozen=True)
     fontSize: float = pydantic.Field(default=9, ge=0, validate_default=True, frozen=True)
-    leading: float = pydantic.Field(default=11, ge=0, validate_default=True, frozen=True)
+    leading: float = pydantic.Field(default=12, ge=0, validate_default=True, frozen=True)
     leftIndent: float = pydantic.Field(default=0, ge=0, validate_default=True, frozen=True)
     rightIndent: float = pydantic.Field(default=0, ge=0, validate_default=True, frozen=True)
     spaceAfter: float = pydantic.Field(default=0, ge=0, validate_default=True, frozen=True)
     spaceBefore: float = pydantic.Field(default=0, ge=0, validate_default=True, frozen=True)
     textColor: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#000000"), validate_default=True, frozen=True)
+    underline: bool = pydantic.Field(default=False, frozen=True)
 
     def get_style(
         self,
@@ -86,6 +87,7 @@ class BaseStyleFactory(pydantic.BaseModel):
             spaceAfter=self.spaceAfter,
             spaceBefore=self.spaceBefore,
             textColor=textColor.hex_color if textColor else self.textColor.hex_color,
+            underline=self.underline,
         )
 
 
@@ -104,23 +106,23 @@ class CandidateTitleStyleFactory(BaseStyleFactory):
 
 class SectionHeaderStyleFactory(BaseStyleFactory):
     fontName: str = pydantic.Field(default=StyleFont.HELVETICA_BOLD.font_name, validate_default=True, frozen=True)
-    fontSize: float = pydantic.Field(default=12, validate_default=True, frozen=True)
+    fontSize: float = pydantic.Field(default=11, validate_default=True, frozen=True)
     leading: float = pydantic.Field(default=18, validate_default=True, frozen=True)
     spaceBefore: float = pydantic.Field(default=12, validate_default=True, frozen=True)
     spaceAfter: float = pydantic.Field(default=0, validate_default=True, frozen=True)
 
 
 class SectionSubtitleStyleFactory(BaseStyleFactory):
-    fontName: str = pydantic.Field(default=StyleFont.HELVETICA_OBLIQUE.font_name, validate_default=True, frozen=True)
-    fontSize: float = pydantic.Field(default=10, validate_default=True, frozen=True)
+    fontName: str = pydantic.Field(default=StyleFont.HELVETICA_BOLDOBLIQUE.font_name, validate_default=True, frozen=True)
+    fontSize: float = pydantic.Field(default=9, validate_default=True, frozen=True)
     leftIndent: float = pydantic.Field(default=0.1 * inch, validate_default=True, frozen=True)
     spaceAfter: float = pydantic.Field(default=2, validate_default=True, frozen=True)
-    textColor: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#505050"), validate_default=True, frozen=True)
+    textColor: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#404040"), validate_default=True, frozen=True)
 
 
 class SectionSubSubTitleStyleFactory(BaseStyleFactory):
     fontName: str = pydantic.Field(default=StyleFont.HELVETICA_OBLIQUE.font_name, validate_default=True, frozen=True)
-    fontSize: float = pydantic.Field(default=10, validate_default=True, frozen=True)
+    fontSize: float = pydantic.Field(default=9, validate_default=True, frozen=True)
     leftIndent: float = pydantic.Field(default=0.1 * inch, validate_default=True, frozen=True)
     spaceAfter: float = pydantic.Field(default=2, validate_default=True, frozen=True)
     textColor: Color = pydantic.Field(default_factory=lambda: Color(hex_string="#505050"), validate_default=True, frozen=True)
@@ -129,6 +131,7 @@ class SectionSubSubTitleStyleFactory(BaseStyleFactory):
 class SectionTextStyleFactory(BaseStyleFactory):
     alignment: Alignment = pydantic.Field(default=TA_LEFT, validate_default=True, frozen=True)
     fontSize: float = pydantic.Field(default=9, validate_default=True, frozen=True)
+    leading: float = pydantic.Field(default=13, validate_default=True, frozen=True)
     leftIndent: float = pydantic.Field(default=0.1 * inch, validate_default=True, frozen=True)
     spaceAfter: float = pydantic.Field(default=2, validate_default=True, frozen=True)
     spaceBefore: float = pydantic.Field(default=2, validate_default=True, frozen=True)
@@ -136,9 +139,10 @@ class SectionTextStyleFactory(BaseStyleFactory):
 
 class SectionTitleStyleFactory(BaseStyleFactory):
     fontName: str = pydantic.Field(default=StyleFont.HELVETICA_BOLD.font_name, validate_default=True, frozen=True)
-    fontSize: float = pydantic.Field(default=11, validate_default=True, frozen=True)
+    fontSize: float = pydantic.Field(default=9, validate_default=True, frozen=True)
     spaceAfter: float = pydantic.Field(default=4, validate_default=True, frozen=True)
     spaceBefore: float = pydantic.Field(default=4, validate_default=True, frozen=True)
+    underline: bool = pydantic.Field(default=True, frozen=True)
 
 
 class SideBarSubtitleStyleFactory(BaseStyleFactory):

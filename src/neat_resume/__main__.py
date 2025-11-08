@@ -17,13 +17,7 @@ def main(argv: list[str] | None = None) -> None:
     """
     argv = list(argv) if argv is not None else None
     parser = argparse.ArgumentParser(description="Generate a resume from a JSON config file")
-    parser.add_argument(
-        "-c",
-        "--config",
-        type=Path,
-        help="Path to resume config JSON file",
-        required=True,
-    )
+    parser.add_argument("-c", "--config", type=Path, help="Path to resume config JSON file", required=True)
 
     args = parser.parse_args(argv)
 

@@ -94,7 +94,7 @@ class Page(pydantic.BaseModel):
 class Config(pydantic.BaseModel):
     resume: Resume = pydantic.Field(frozen=True)
 
-    file: Path = pydantic.Field(default_factory=Path, validate_default=True)
+    file: Path = pydantic.Field(default_factory=Path)
     page: Page = pydantic.Field(default_factory=Page, validate_default=True, frozen=True)
     styles: Styles = pydantic.Field(default_factory=Styles, validate_default=True, frozen=True)
 

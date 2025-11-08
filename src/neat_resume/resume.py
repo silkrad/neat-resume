@@ -58,7 +58,7 @@ class EducationBlock(pydantic.BaseModel):
     gpa: float | None = pydantic.Field(default=None, ge=0, le=4, description="Grade point average (GPA)", frozen=True)
     institution: str = pydantic.Field(description="Name of the educational institution", frozen=True)
     location: str = pydantic.Field(description="Location of the educational institution", frozen=True)
-    start_date: date = pydantic.Field(description="Start date of the education", frozen=True)
+    start_date: date | None = pydantic.Field(default=None, description="Start date of the education", frozen=True)
     summary: list[str] = pydantic.Field(description="List of key highlights or achievements during the education", frozen=True)
 
 

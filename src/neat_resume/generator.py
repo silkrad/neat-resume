@@ -156,19 +156,31 @@ class Generator(pydantic.BaseModel):
             contact_info.append(self._format_contact_line(Symbol.ADDRESS, self.config.resume.candidate.address))
         if self.config.resume.candidate.website:
             contact_info.append(
-                self._format_contact_line(Symbol.WEBSITE, f'<link href="{self.config.resume.candidate.website}">Website</link>')
+                self._format_contact_line(
+                    Symbol.WEBSITE,
+                    f'Website: <link href="{self.config.resume.candidate.website}">{self.config.resume.candidate.website}</link>',
+                )
             )
         if self.config.resume.candidate.linkedin:
             contact_info.append(
-                self._format_contact_line(Symbol.LINKEDIN, f'<link href="{self.config.resume.candidate.linkedin}">LinkedIn</link>')
+                self._format_contact_line(
+                    Symbol.LINKEDIN,
+                    f'LinkedIn: <link href="{self.config.resume.candidate.linkedin}">{self.config.resume.candidate.linkedin}</link>',
+                )
             )
         if self.config.resume.candidate.github:
             contact_info.append(
-                self._format_contact_line(Symbol.GITHUB, f'<link href="{self.config.resume.candidate.github}">GitHub</link>')
+                self._format_contact_line(
+                    Symbol.GITHUB,
+                    f'GitHub: <link href="{self.config.resume.candidate.github}">{self.config.resume.candidate.github}</link>',
+                )
             )
         if self.config.resume.candidate.gitlab:
             contact_info.append(
-                self._format_contact_line(Symbol.GITLAB, f'<link href="{self.config.resume.candidate.gitlab}">GitLab</link>')
+                self._format_contact_line(
+                    Symbol.GITLAB,
+                    f'GitLab: <link href="{self.config.resume.candidate.gitlab}">{self.config.resume.candidate.gitlab}</link>',
+                )
             )
         for info in contact_info:
             elements.append(Paragraph(info, self.config.styles.sidebar_text.get_style()))
@@ -196,9 +208,10 @@ class Generator(pydantic.BaseModel):
             elements.append(Paragraph(f"{edu.institution}", self.config.styles.sidebar_text.get_style()))
             if edu.location:
                 elements.append(Paragraph(f"{edu.location}", self.config.styles.sidebar_text.get_style()))
-            start_date = edu.start_date.strftime("%b %Y")
-            end_date = edu.end_date.strftime("%b %Y") if edu.end_date else "Present"
-            elements.append(Paragraph(f"{start_date} - {end_date}", self.config.styles.sidebar_text.get_style()))
+            if edu.start_date and edu.end_date:
+                start_date = edu.start_date.strftime("%b %Y")
+                end_date = edu.end_date.strftime("%b %Y") if edu.end_date else "Present"
+                elements.append(Paragraph(f"{start_date} - {end_date}", self.config.styles.sidebar_text.get_style()))
             if edu.gpa:
                 elements.append(Paragraph(f"GPA: {edu.gpa:.2f}", self.config.styles.sidebar_text.get_style()))
             elements.append(Spacer(1, 0.05 * inch))

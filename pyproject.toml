@@ -7,7 +7,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "neat_resume"
+name = "neat-resume"
 dynamic = ["version"]
 description = ''
 readme = "README.md"
